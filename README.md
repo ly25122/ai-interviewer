@@ -128,7 +128,7 @@ lib/interview-demo.ts        演示模式材料
 lib/samples.*                示例面经
 scripts/                     端到端冒烟脚本
 deploy/                      部署脚本、评委公钥、服务配置
-docs/PRD.md                  开发期需求记录
+docs/PRD.md                  产品说明（与现流程对齐）
 ```
 
 ## AI 使用说明
