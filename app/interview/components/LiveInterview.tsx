@@ -260,21 +260,14 @@ export function LivePhase({
         <div className="surface rounded-lg p-3">
           <p className="px-1 text-xs tracking-[0.16em] text-[var(--muted)]">题目</p>
           <div className="mt-2 space-y-3">
-            {(
-              [
-                ['intel_hit', '情报命中'],
-                ['resume_match', 'JD × 简历'],
-                ['resume_risk', '简历风险'],
-                ['jd_gap', 'JD 缺口'],
-              ] as const
-            ).map(([src, group]) => {
+            {(['intel_hit', 'resume_match', 'resume_risk', 'jd_gap'] as const).map((src) => {
               const groupPoints = plan.points
                 .map((p, i) => ({ p, i }))
                 .filter(({ p }) => p.source === src);
               if (groupPoints.length === 0) return null;
               return (
                 <div key={src}>
-                  <p className="px-1 text-[10px] text-[var(--muted)]">{group}</p>
+                  <p className="px-1 text-[10px] text-[var(--muted)]">{SOURCE_META[src].label}</p>
                   <div className="mt-1 space-y-1.5">
                     {groupPoints.map(({ p, i }) => {
                       const doneSession = sessions[p.id];
@@ -290,13 +283,6 @@ export function LivePhase({
                           }`}
                         >
                           <span className="line-clamp-2">{p.title}</span>
-                          <span
-                            className={`mt-1 inline-block rounded px-1.5 py-0.5 text-[10px] ${
-                              i === index ? 'bg-white/15 text-white/80' : SOURCE_META[p.source].tone
-                            }`}
-                          >
-                            {SOURCE_META[p.source].label}
-                          </span>
                           {doneSession && (
                             <span
                               className={`mt-1 block ${
@@ -337,7 +323,15 @@ export function LivePhase({
       <section className="order-1 lg:order-2">
         {sessions[point.id] ? (
           <div className="surface rounded-lg p-5">
-            <p className="text-xs tracking-[0.16em] text-[var(--accent)]">已完成</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs tracking-[0.16em] text-[var(--accent)]">已完成</p>
+              <span className={`rounded px-2 py-0.5 text-[11px] font-medium ${SOURCE_META[point.source].tone}`}>
+                {SOURCE_META[point.source].label}
+              </span>
+            </div>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-[var(--muted)]">
+              {SOURCE_META[point.source].hint}
+            </p>
             <h2 className="font-brand mt-2 text-2xl">{point.title}</h2>
             <p className="mt-2 text-sm text-[var(--muted)]">
               结果：
@@ -477,6 +471,9 @@ function PointProbe({
           {SOURCE_META[point.source].label}
         </span>
       </div>
+      <p className="mt-1.5 text-[11px] leading-relaxed text-[var(--muted)]">
+        {SOURCE_META[point.source].hint}
+      </p>
       <h2 className="font-brand mt-2 text-2xl">{point.title}</h2>
       <p className="mt-2 text-xs leading-relaxed text-[var(--muted)]">{point.reason}</p>
       <div className="mt-4">

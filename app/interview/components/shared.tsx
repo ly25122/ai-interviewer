@@ -6,21 +6,28 @@ import type { AttackSource, IntelSource, IntelTrust } from '@/lib/types';
 export const ACCEPT =
   '.pdf,.docx,.txt,.md,.markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain';
 
-export const SOURCE_META: Record<AttackSource, { label: string; tone: string }> = {
+export const SOURCE_META: Record<
+  AttackSource,
+  { label: string; hint: string; tone: string }
+> = {
   intel_hit: {
-    label: '情报命中 · 该组考过',
+    label: '面经考点',
+    hint: '该岗位或该组面经中出现过，非通用题库抽取。',
     tone: 'bg-[rgba(37,99,235,0.12)] text-[#2f6df0]',
   },
   resume_match: {
-    label: 'JD × 简历重合',
+    label: '经历已覆盖',
+    hint: '职位要求与简历经历重合，将围绕实际贡献追问。',
     tone: 'bg-[rgba(31,107,74,0.12)] text-[var(--ok)]',
   },
   resume_risk: {
-    label: '简历风险点',
+    label: '经历待核实',
+    hint: '量化结果或职责表述偏满，追问中需给出可核验依据。',
     tone: 'bg-[rgba(161,98,7,0.12)] text-[var(--warn)]',
   },
   jd_gap: {
-    label: 'JD 有要求 · 简历弱',
+    label: '要求未覆盖',
+    hint: '职位描述有明确要求，简历中缺少对应经历。',
     tone: 'bg-[rgba(159,45,58,0.1)] text-[var(--danger)]',
   },
 };

@@ -1,62 +1,114 @@
 import Link from 'next/link';
 import { HomeStatus } from './components/HomeStatus';
 
+function MarkLogo() {
+  return (
+    <svg viewBox="0 0 32 32" className="h-8 w-8 shrink-0" aria-hidden>
+      <rect x="3" y="6" width="16" height="16" rx="4" fill="#1f9d7a" opacity="0.85" />
+      <rect x="13" y="10" width="16" height="16" rx="4" fill="#3ecf9a" />
+    </svg>
+  );
+}
+
+function RocketIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden>
+      <path
+        d="M14.5 4.5c2.8 1.2 5.2 3.6 6.4 6.4-2.6.6-5.7-.6-7.6-2.5-1.9-1.9-3.1-5-2.5-7.6 1.1.4 2.4 1.1 3.7 3.7Z"
+        fill="currentColor"
+      />
+      <path d="M13 9.5 5 17.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path
+        d="M6.5 14.5 4 17l2.5-.2L7.2 19 9.5 16"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function PlayIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>
+      <path d="M8.4 5.6v12.8l10.2-6.4L8.4 5.6Z" />
+    </svg>
+  );
+}
+
 export default function HomePage() {
   return (
-    <main className="relative min-h-dvh overflow-hidden room-bg text-[#eef3f0]">
-      <div className="pointer-events-none absolute inset-0 room-grid" />
-      <div className="lamp-glow pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-[rgba(31,122,102,0.35)] blur-3xl" />
+    <main className="home-shell relative min-h-dvh overflow-hidden text-[#eef3f0]">
+      <div className="pointer-events-none absolute inset-0 home-grid" />
+      <div className="lamp-glow pointer-events-none absolute -right-16 -top-20 h-[28rem] w-[28rem] rounded-full bg-[rgba(46,184,140,0.22)] blur-3xl" />
+      <div className="pointer-events-none absolute -left-24 bottom-0 h-72 w-72 rounded-full bg-[rgba(20,90,75,0.28)] blur-3xl" />
 
-      <nav className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-6 sm:px-6">
-        <span className="font-brand text-xl tracking-tight text-white">情报驱动 · 备战</span>
-        <Link
-          href="/history"
-          className="text-sm text-white/55 transition hover:text-white"
-        >
-          往期复盘
-        </Link>
+      <nav className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-5 sm:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <MarkLogo />
+          <div className="min-w-0">
+            <p className="text-[17px] font-semibold tracking-tight text-white">面试参谋</p>
+            <p className="text-[11px] text-white/45">情报驱动的 AI 面试备战</p>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-4 sm:gap-5">
+          <Link href="/interview" className="hidden text-sm text-white/80 transition hover:text-white sm:inline">
+            我的备战
+          </Link>
+          <Link href="/history" className="hidden text-sm text-white/80 transition hover:text-white sm:inline">
+            历史复盘
+          </Link>
+          <Link href="/interview?demo=1" className="home-cta inline-flex items-center rounded-full px-4 py-2 text-sm font-medium">
+            演示模式
+          </Link>
+        </div>
       </nav>
 
-      <section className="relative z-10 mx-auto grid min-h-[calc(100dvh-88px)] w-full max-w-6xl items-stretch gap-8 px-5 pb-16 pt-4 sm:px-6 lg:grid-cols-2 lg:gap-12">
+      <section className="relative z-10 mx-auto grid min-h-[calc(100dvh-88px)] w-full max-w-6xl items-stretch gap-8 px-5 pb-16 pt-2 sm:px-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-12">
         <HomeStatus />
 
-        <div className="flex flex-col justify-between">
+        <div className="flex flex-col justify-between py-2">
           <div>
-            <p className="anim-rise text-sm text-[#7dbaa8]">面试准备</p>
-            <h1 className="anim-rise-delay font-brand mt-5 text-[clamp(2rem,5.4vw,3.6rem)] leading-[1.12] text-white">
-              按目标岗位
+            <p className="anim-rise text-sm tracking-wide text-[#7dbaa8]">面试准备</p>
+            <h1 className="anim-rise-delay mt-4 text-[clamp(2.1rem,5.2vw,3.55rem)] font-semibold leading-[1.18] tracking-tight text-white">
+              先知道怎么考，
               <br />
-              准备面试
+              再开始准备
             </h1>
-            <p className="anim-rise-late mt-6 max-w-xl text-base leading-relaxed text-white/70">
-              汇总该公司、该岗位的公开面经，对照简历与职位描述出题。训练结束后列出已掌握、仍需加强与尚未覆盖的考点。
+            <p className="anim-rise-late mt-6 max-w-xl text-[15px] leading-relaxed text-white/68">
+              先把这家公司、这个岗位真实怎么考摸清楚，再对照你的简历练。不是随机刷题，是按情报出题、按缺口复盘。
             </p>
-            <div className="anim-rise-late mt-8 grid gap-5 border-t border-white/10 pt-6 sm:grid-cols-3">
+            <div className="anim-rise-late mt-9 grid gap-6 sm:grid-cols-3">
               {[
-                { n: '1', t: '收集面经', d: '检索该岗位的公开面试记录，按发布时间排序。' },
-                { n: '2', t: '针对性训练', d: '依据简历、职位描述与情报生成追问，而不是通用题库。' },
-                { n: '3', t: '复盘缺口', d: '保留当场问答，并标出下一步应补的考点。' },
+                { n: '1', t: '看清怎么考', d: '把公开面经收成这份岗位的考点，而不是一份通用题库。' },
+                { n: '2', t: '对着简历练', d: '按你写过的项目追问，讲不清的地方当场标出来。' },
+                { n: '3', t: '只补缺口', d: '练完告诉你站住了哪些、还差哪三刀，下一步不用猜。' },
               ].map((item) => (
                 <div key={item.n}>
-                  <p className="text-xs text-[#7dbaa8]">{item.n}</p>
-                  <p className="mt-1.5 font-brand text-lg text-white">{item.t}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-white/50">{item.d}</p>
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[#1f9d7a] text-sm font-semibold text-white">
+                    {item.n}
+                  </span>
+                  <p className="mt-3 text-[15px] font-semibold text-white">{item.t}</p>
+                  <p className="mt-1.5 text-xs leading-relaxed text-white/48">{item.d}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="anim-rise-late mt-10 flex flex-wrap items-center gap-4">
+          <div className="anim-rise-late mt-10 flex flex-wrap items-center gap-3">
             <Link
               href="/interview"
-              className="btn-primary rounded-md px-6 py-3 text-sm font-medium tracking-wide"
+              className="home-cta inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-medium"
             >
-              开始准备
+              <RocketIcon />
+              创建新的备战
             </Link>
             <Link
               href="/interview?demo=1"
-              className="rounded-md border border-white/20 px-6 py-3 text-sm text-white/80 transition hover:border-white/40 hover:text-white"
+              className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/5 px-6 py-3 text-sm text-white/90 transition hover:border-white/45 hover:bg-white/10"
             >
+              <PlayIcon />
               查看演示
             </Link>
           </div>

@@ -117,7 +117,7 @@ export function SetupPanel({
 
       <div className="grid gap-3 lg:grid-cols-2">
         <MaterialCard
-          key={`resume-${demo ? 'demo' : 'own'}-${resume.trim() ? '1' : '0'}`}
+          key={demo ? 'resume-demo' : 'resume-own'}
           step="你的简历"
           label="用来对照 JD 和情报"
           value={resume}
@@ -133,7 +133,7 @@ export function SetupPanel({
           compact
         />
         <MaterialCard
-          key={`jd-${demo ? 'demo' : 'own'}-${jd.trim() ? '1' : '0'}`}
+          key={demo ? 'jd-demo' : 'jd-own'}
           step="岗位 JD"
           label="目标岗位描述"
           value={jd}

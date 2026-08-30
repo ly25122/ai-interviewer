@@ -138,6 +138,7 @@ function PointRow({
       </button>
       {open && (
         <div className="mt-3 pl-[4.75rem]">
+          <p className="mb-2 text-[11px] leading-relaxed text-[var(--muted)]">{meta.hint}</p>
           <TurnReplay turns={point.turns} collapsedAtTurn={point.collapsedAtTurn} />
         </div>
       )}

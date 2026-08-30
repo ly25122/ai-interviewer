@@ -122,7 +122,7 @@ export function PracticeLauncher({
           <p className="mt-2 font-brand text-2xl">按真实面试走一遍</p>
           <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
             {durationMin} 分钟 · {questionCount} 题 · {DIFFS.find((d) => d.id === difficulty)?.label}
-            。情报、简历风险、JD 缺口都会问。
+            。题目覆盖面经考点、经历已覆盖、经历待核实与要求未覆盖。
           </p>
         </button>
         <button

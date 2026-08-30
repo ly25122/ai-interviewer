@@ -60,7 +60,7 @@ export function IntelligenceHub({
   const [text, setText] = useState('');
   const [trust, setTrust] = useState<IntelTrust>('high');
   const [url, setUrl] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<null | 'fetch' | 'collect' | 'parse'>(null);
   const [note, setNote] = useState('');
   const [collectDept, setCollectDept] = useState('');
   const [hits, setHits] = useState<CollectHit[]>([]);
@@ -99,7 +99,7 @@ export function IntelligenceHub({
   }
 
   async function addFile(file: File) {
-    setBusy(true);
+    setBusy('parse');
     setNote('');
     try {
       const content = await parseUpload(file);
@@ -114,13 +114,13 @@ export function IntelligenceHub({
     } catch (e) {
       setNote(e instanceof Error ? e.message : '文件解析失败');
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
 
   async function addUrl() {
     if (!url.trim()) return;
-    setBusy(true);
+    setBusy('fetch');
     setNote('正在抓取正文…');
     try {
       const res = await fetch('/api/interview/fetch-url', {
@@ -145,7 +145,7 @@ export function IntelligenceHub({
     } catch (e) {
       setNote(e instanceof Error ? e.message : '抓取失败，可手动复制正文用「整理/粘贴」加入');
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
 
@@ -178,7 +178,7 @@ export function IntelligenceHub({
       setNote('先回上一页把公司和岗位填好');
       return;
     }
-    setBusy(true);
+    setBusy('collect');
     setNote('正在检索公开面经，按时间往近收…');
     setHits([]);
     setPicked([]);
@@ -223,7 +223,7 @@ export function IntelligenceHub({
     } catch (e) {
       setNote(e instanceof Error ? e.message : '自动检索失败，请改为手动粘贴');
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
 
@@ -273,31 +273,63 @@ export function IntelligenceHub({
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <section className="surface space-y-3 rounded-lg p-3 sm:p-4">
-          <div className="inline-flex flex-wrap gap-0.5 rounded-md border border-[var(--line)] p-0.5 text-[11px]">
-            {([
-              ['auto', '自动检索'],
-              ['paste', '整理/粘贴'],
-              ['url', '链接抓取'],
-              ['file', '上传文件'],
-            ] as const).map(([m, t]) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => {
-                  setMode(m);
-                  setNote('');
-                }}
-                className={`rounded px-2.5 py-1 transition ${
-                  mode === m
-                    ? m === 'auto'
-                      ? 'bg-[var(--accent)] text-[var(--paper)]'
-                      : 'bg-[var(--ink)] text-[var(--paper)]'
-                    : 'text-[var(--muted)] hover:text-[var(--ink)]'
-                }`}
-              >
-                {t}
-              </button>
-            ))}
+          <div className="flex flex-wrap gap-3">
+            {(
+              [
+                {
+                  group: '公开收集',
+                  hint: '网上找、贴链接',
+                  items: [
+                    ['auto', '自动检索'],
+                    ['url', '链接抓取'],
+                  ],
+                },
+                {
+                  group: '手动加入',
+                  hint: '自己整理的材料',
+                  items: [
+                    ['paste', '整理/粘贴'],
+                    ['file', '上传文件'],
+                  ],
+                },
+              ] as const
+            ).map((g) => {
+              const active = g.items.some(([m]) => m === mode);
+              return (
+                <div
+                  key={g.group}
+                  className={`min-w-[200px] flex-1 rounded-lg border p-2 ${
+                    active ? 'border-[var(--accent)]/40 bg-[rgba(31,122,102,0.05)]' : 'border-[var(--line)]'
+                  }`}
+                >
+                  <p className="px-1 text-[10px] text-[var(--muted)]">
+                    {g.group}
+                    <span className="ml-1.5 opacity-70">· {g.hint}</span>
+                  </p>
+                  <div className="mt-1.5 inline-flex w-full gap-0.5 rounded-md bg-black/[0.03] p-0.5 text-[11px]">
+                    {g.items.map(([m, t]) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => {
+                          setMode(m);
+                          setNote('');
+                        }}
+                        className={`flex-1 rounded px-2.5 py-1.5 transition ${
+                          mode === m
+                            ? m === 'auto' || m === 'url'
+                              ? 'bg-[var(--accent)] text-[var(--paper)]'
+                              : 'bg-[var(--ink)] text-[var(--paper)]'
+                            : 'text-[var(--muted)] hover:text-[var(--ink)]'
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {mode !== 'auto' && (
@@ -347,10 +379,10 @@ export function IntelligenceHub({
               <button
                 type="button"
                 onClick={addUrl}
-                disabled={busy || !url.trim()}
+                disabled={busy === 'fetch' || !url.trim()}
                 className="btn-primary rounded-md px-3 py-1.5 text-xs"
               >
-                {busy ? '抓取中…' : '抓取正文'}
+                {busy === 'fetch' ? '抓取中…' : '抓取正文'}
               </button>
             </div>
           )}
@@ -361,7 +393,7 @@ export function IntelligenceHub({
                 type="file"
                 accept={ACCEPT}
                 className="hidden"
-                disabled={busy}
+                disabled={busy === 'parse'}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) addFile(file);
@@ -369,7 +401,7 @@ export function IntelligenceHub({
                 }}
               />
               <span className="text-xs text-[var(--ink)]">
-                {busy ? '解析中…' : '上传 PDF / 截图导出 / MD / TXT'}
+                {busy === 'parse' ? '解析中…' : '上传 PDF / 截图导出 / MD / TXT'}
               </span>
             </label>
           )}
@@ -412,10 +444,10 @@ export function IntelligenceHub({
               <button
                 type="button"
                 onClick={collectAuto}
-                disabled={busy}
+                disabled={busy === 'collect'}
                 className="btn-primary rounded-md px-4 py-2 text-sm font-medium"
               >
-                {busy ? '检索中…' : '开始检索公开面经'}
+                {busy === 'collect' ? '检索中…' : '开始检索公开面经'}
               </button>
               {hits.length > 0 && (
                 <ul className="max-h-64 space-y-1 overflow-auto rounded-md border border-[var(--line)] bg-[var(--paper-lift)] p-1.5">
