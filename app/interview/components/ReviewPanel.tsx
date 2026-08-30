@@ -1,7 +1,7 @@
 'use client';
 
-import { ProgressPanel } from '@/app/components/ProgressPanel';
-import { CoverageRing, StackedMeter } from '@/app/components/ProgressViz';
+import { CoverageRing, StackedMeter, WeekBars } from '@/app/components/ProgressViz';
+import { summarize } from '@/lib/progress';
 import type {
   IntelligenceItem,
   InterviewPlan,
@@ -48,6 +48,7 @@ export function ReviewPanel({
     (c) => c.status === 'unrated' || c.status === 'gap',
   ).length;
   const incomplete = plan ? plan.points.some((p) => !sessions[p.id]) : false;
+  const progressSummary = summarize(records);
   const debrief = (plan?.points ?? [])
     .map((p) => {
       const s = sessions[p.id];
@@ -93,7 +94,7 @@ export function ReviewPanel({
 
         <div className="grid grid-cols-3 gap-2">
           <Bucket label="已验证" value={verified} tone="ok" />
-          <Bucket label="经不起" value={shaky} tone="warn" />
+          <Bucket label="需加强" value={shaky} tone="warn" />
           <Bucket label="未覆盖" value={uncovered} />
         </div>
 
@@ -131,7 +132,19 @@ export function ReviewPanel({
           )}
         </div>
 
-        <ProgressPanel records={records} compact />
+        <div className="surface rounded-lg p-4">
+          <div className="flex items-baseline justify-between gap-2">
+            <p className="text-sm font-medium">近 7 天</p>
+            <p className="text-xs text-[var(--muted)]">
+              {progressSummary.streak > 0
+                ? `已连续练习 ${progressSummary.streak} 天`
+                : '练过的日子会亮起来'}
+            </p>
+          </div>
+          <div className="mt-3">
+            <WeekBars days={progressSummary.week} />
+          </div>
+        </div>
 
         <ResumeCoach
           resume={resume}

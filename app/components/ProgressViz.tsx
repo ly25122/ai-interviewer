@@ -12,10 +12,15 @@ export function JourneyBar({
   steps,
   current,
   compact = false,
+  onSelect,
+  isAvailable,
 }: {
   steps: JourneyStep[];
   current: string;
   compact?: boolean;
+  /** 提供后步骤变为可点击导航；配合 isAvailable 控制哪些步骤已解锁 */
+  onSelect?: (id: string) => void;
+  isAvailable?: (id: string) => boolean;
 }) {
   const idx = Math.max(
     0,
@@ -27,9 +32,31 @@ export function JourneyBar({
       {steps.map((step, i) => {
         const done = i < idx;
         const active = i === idx;
+        const available = isAvailable?.(step.id) ?? true;
+        const clickable = Boolean(onSelect) && available && !active;
         return (
           <li key={step.id} className="flex min-w-0 flex-1 items-start">
-            <div className="flex min-w-0 flex-col items-center text-center">
+            <button
+              type="button"
+              aria-disabled={!clickable}
+              onClick={() => {
+                if (clickable) onSelect?.(step.id);
+              }}
+              title={
+                !onSelect || active
+                  ? step.label
+                  : available
+                    ? `前往：${step.label}`
+                    : '先完成前面的步骤'
+              }
+              className={`flex min-w-0 flex-col items-center rounded-sm text-center transition ${
+                clickable
+                  ? 'cursor-pointer hover:bg-black/5'
+                  : available
+                    ? 'cursor-default'
+                    : 'cursor-not-allowed'
+              } ${onSelect && !available ? 'opacity-40' : ''}`}
+            >
               <span
                 className={`flex items-center justify-center rounded-full font-medium transition ${
                   compact ? 'h-5 w-5 text-[10px]' : 'h-7 w-7 text-xs'
@@ -46,11 +73,13 @@ export function JourneyBar({
               <span
                 className={`leading-tight ${
                   compact ? 'mt-0.5 text-[10px]' : 'mt-1.5 text-[11px]'
-                } ${active ? 'text-[var(--ink)]' : 'text-[var(--muted)]'}`}
+                } ${active ? 'text-[var(--ink)]' : 'text-[var(--muted)]'} ${
+                  active ? '' : 'max-sm:hidden'
+                }`}
               >
                 {step.label}
               </span>
-            </div>
+            </button>
             {i < steps.length - 1 && (
               <div
                 className={`mx-1 flex-1 ${compact ? 'mt-2.5 h-px' : 'mt-3 h-px'} ${

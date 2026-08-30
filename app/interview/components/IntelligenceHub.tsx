@@ -10,6 +10,8 @@ import {
   ACCEPT,
   INTEL_SOURCE_META,
   TRUST_OPTIONS,
+  ErrorNote,
+  PhaseNav,
   formatIntelDate,
   hostFromUrl,
   parseUpload,
@@ -570,25 +572,15 @@ export function IntelligenceHub({
         </section>
       </div>
 
-      {error && (
-        <p className="rounded-md border border-[rgba(159,45,58,0.25)] bg-[rgba(159,45,58,0.08)] px-3 py-2 text-sm text-[var(--danger)]">
-          {error}
-        </p>
-      )}
+      <ErrorNote error={error} />
 
-      <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={onNext}
-          disabled={items.length === 0 || summarizing}
-          className="btn-primary rounded-md px-5 py-2.5 text-sm font-medium"
-        >
-          {summarizing ? '正在聚合考点…' : '查看岗位情报画像 →'}
-        </button>
-        <button type="button" onClick={onBack} className="btn-ghost rounded-md px-4 py-2 text-sm">
-          返回目标岗位
-        </button>
-      </div>
+      <PhaseNav
+        nextLabel={summarizing ? '正在聚合考点…' : '查看岗位情报画像 →'}
+        onNext={onNext}
+        backLabel="返回目标岗位"
+        onBack={onBack}
+        nextDisabled={items.length === 0 || summarizing}
+      />
     </div>
   );
 }

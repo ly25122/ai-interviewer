@@ -1,7 +1,7 @@
 'use client';
 
 import type { IntelligenceItem, IntelSource, Syllabus } from '@/lib/types';
-import { INTEL_SOURCE_META } from './shared';
+import { ErrorNote, INTEL_SOURCE_META, PhaseNav } from './shared';
 
 const COLORS = ['#1f7a66', '#2f6df0', '#a16207', '#9f2d3a', '#145a4b', '#5c6b64'];
 
@@ -64,16 +64,17 @@ function PieChart({ slices }: { slices: Slice[] }) {
   const cy = 72;
   const r = 62;
   const total = slices.reduce((s, x) => s + x.value, 0) || 1;
-  let acc = -Math.PI / 2;
+  const arcs = slices.reduce<Array<{ s: Slice; a0: number; a1: number }>>((list, s) => {
+    const a0 = list.length ? list[list.length - 1].a1 : -Math.PI / 2;
+    const a1 = a0 + (s.value / total) * Math.PI * 2;
+    list.push({ s, a0, a1 });
+    return list;
+  }, []);
   return (
     <svg viewBox="0 0 144 144" className="mx-auto h-36 w-44" aria-hidden>
-      {slices.map((s) => {
-        const sweep = (s.value / total) * Math.PI * 2;
-        const a0 = acc;
-        const a1 = acc + sweep;
-        acc = a1;
-        return <path key={s.label} d={pieSlice(cx, cy, r, a0, a1)} fill={s.color} />;
-      })}
+      {arcs.map(({ s, a0, a1 }) => (
+        <path key={s.label} d={pieSlice(cx, cy, r, a0, a1)} fill={s.color} />
+      ))}
       <circle cx={cx} cy={cy} r={28} fill="var(--paper-lift)" />
     </svg>
   );
@@ -215,24 +216,14 @@ export function ProfilePanel({
         </div>
       </div>
 
-      {error && (
-        <p className="rounded-md border border-[rgba(159,45,58,0.25)] bg-[rgba(159,45,58,0.08)] px-3 py-2 text-sm text-[var(--danger)]">
-          {error}
-        </p>
-      )}
+      <ErrorNote error={error} />
 
-      <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={onNext}
-          className="btn-primary rounded-md px-5 py-2.5 text-sm font-medium"
-        >
-          开始针对性训练 →
-        </button>
-        <button type="button" onClick={onBack} className="btn-ghost rounded-md px-4 py-2 text-sm">
-          返回面试情报
-        </button>
-      </div>
+      <PhaseNav
+        nextLabel="开始针对性训练 →"
+        onNext={onNext}
+        backLabel="返回面试情报"
+        onBack={onBack}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import type { Syllabus, TrainingMode } from '@/lib/types';
+import { ErrorNote } from './shared';
 
 export function PracticeLauncher({
   company,
@@ -65,11 +66,7 @@ export function PracticeLauncher({
       </div>
 
       {loading && <p className="text-sm text-[var(--muted)]">正在按这份材料出题…</p>}
-      {error && (
-        <p className="rounded-md border border-[rgba(159,45,58,0.25)] bg-[rgba(159,45,58,0.08)] px-3 py-2 text-sm text-[var(--danger)]">
-          {error}
-        </p>
-      )}
+      <ErrorNote error={error} />
 
       <button type="button" onClick={onBack} className="btn-ghost rounded-md px-4 py-2.5 text-sm">
         返回岗位画像

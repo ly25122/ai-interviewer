@@ -168,7 +168,7 @@ export function LivePhase({
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[260px_1fr]">
-      <aside className="space-y-3 lg:sticky lg:top-4">
+      <aside className="order-2 space-y-3 lg:sticky lg:top-4 lg:order-1">
         <div className="surface rounded-lg p-4">
           <p className="text-xs tracking-[0.16em] text-[var(--muted)]">训练进度</p>
           <div className="mt-3">
@@ -248,7 +248,7 @@ export function LivePhase({
         <ResumeSheet resume={resume} jd={jd} />
       </aside>
 
-      <section>
+      <section className="order-1 lg:order-2">
         {sessions[point.id] ? (
           <div className="surface rounded-lg p-5">
             <p className="text-xs tracking-[0.16em] text-[var(--accent)]">已完成</p>
@@ -265,6 +265,9 @@ export function LivePhase({
                 <div key={i} className="border-l-2 border-[var(--line)] pl-3">
                   <p className="text-xs text-[var(--muted)]">面试官：{t.question}</p>
                   <p className="mt-1 text-xs">你：{t.answer}</p>
+                  {t.judgement && (
+                    <p className="mt-1 text-[11px] text-[var(--ok)]">{t.judgement}</p>
+                  )}
                 </div>
               ))}
             </div>

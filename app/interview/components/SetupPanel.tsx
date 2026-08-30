@@ -1,7 +1,7 @@
 'use client';
 
 import sample from '@/lib/interview-sample.json';
-import { MaterialCard } from './shared';
+import { ErrorNote, JD_MIN_CHARS, MaterialCard, RESUME_MIN_CHARS } from './shared';
 
 export function SetupPanel({
   company,
@@ -36,8 +36,8 @@ export function SetupPanel({
   onSample: () => void;
   onNext: () => void;
 }) {
-  const resumeReady = resume.trim().length >= 80;
-  const jdReady = jd.trim().length >= 40;
+  const resumeReady = resume.trim().length >= RESUME_MIN_CHARS;
+  const jdReady = jd.trim().length >= JD_MIN_CHARS;
   const targetReady = company.trim().length >= 2 && role.trim().length >= 2;
   const canNext = resumeReady && jdReady && targetReady && !parsing;
 
@@ -134,11 +134,7 @@ export function SetupPanel({
           : `公司、岗位、简历、JD 都齐了才能继续。${sample ? '示例来自一份电商后端实习材料。' : ''}`}
       </p>
 
-      {error && (
-        <p className="rounded-md border border-[rgba(159,45,58,0.25)] bg-[rgba(159,45,58,0.08)] px-3 py-2 text-sm text-[var(--danger)]">
-          {error}
-        </p>
-      )}
+      <ErrorNote error={error} />
     </div>
   );
 }

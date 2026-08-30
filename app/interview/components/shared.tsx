@@ -42,6 +42,51 @@ export function uid() {
   return Math.random().toString(36).slice(2, 9);
 }
 
+/** 进入「面试情报」及之后阶段的材料门槛，与设置页的「下一步」判定保持一致 */
+export const RESUME_MIN_CHARS = 80;
+export const JD_MIN_CHARS = 40;
+
+export function ErrorNote({ error }: { error: string }) {
+  if (!error) return null;
+  return (
+    <p className="rounded-md border border-[rgba(159,45,58,0.25)] bg-[rgba(159,45,58,0.08)] px-3 py-2 text-sm text-[var(--danger)]">
+      {error}
+    </p>
+  );
+}
+
+export function PhaseNav({
+  nextLabel,
+  onNext,
+  backLabel,
+  onBack,
+  nextDisabled = false,
+}: {
+  nextLabel: string;
+  onNext: () => void;
+  backLabel?: string;
+  onBack?: () => void;
+  nextDisabled?: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap gap-3">
+      <button
+        type="button"
+        onClick={onNext}
+        disabled={nextDisabled}
+        className="btn-primary rounded-md px-5 py-2.5 text-sm font-medium"
+      >
+        {nextLabel}
+      </button>
+      {backLabel && onBack && (
+        <button type="button" onClick={onBack} className="btn-ghost rounded-md px-4 py-2 text-sm">
+          {backLabel}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function hostFromUrl(url?: string): string {
   if (!url) return '';
   try {
