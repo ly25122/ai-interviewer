@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { resumeInterviewStep } from '@/lib/engine/resumeInterview';
 import { LLMError } from '@/lib/llm';
-import type { AttackPoint, IntelligenceItem } from '@/lib/types';
+import type { AttackPoint, IntelligenceItem, PracticeDifficulty } from '@/lib/types';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -13,6 +13,7 @@ export async function POST(request: Request) {
     point?: AttackPoint;
     turns?: Array<{ question: string; answer: string }>;
     intelligence?: IntelligenceItem[];
+    difficulty?: PracticeDifficulty;
   };
   try {
     body = await request.json();
@@ -34,6 +35,8 @@ export async function POST(request: Request) {
       point: body.point,
       turns: (body.turns ?? []).filter((t) => t?.question && t?.answer),
       intelligence: Array.isArray(body.intelligence) ? body.intelligence : [],
+      difficulty:
+        body.difficulty === 'easy' || body.difficulty === 'hard' ? body.difficulty : 'medium',
     });
     return NextResponse.json(result);
   } catch (error) {

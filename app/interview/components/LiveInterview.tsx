@@ -7,6 +7,7 @@ import type {
   AttackPoint,
   InterviewPlan,
   IntelligenceItem,
+  PracticeDifficulty,
   ProbeTurn,
   ReferenceAnswer as ReferenceAnswerData,
   ResumeInterviewSession,
@@ -195,6 +196,7 @@ export function LivePhase({
   presetRefs,
   durationMin,
   startedAt,
+  difficulty = 'medium',
   onSelect,
   onFinishPoint,
   onDone,
@@ -209,6 +211,7 @@ export function LivePhase({
   presetRefs?: Record<string, ReferenceAnswerData>;
   durationMin?: number;
   startedAt?: number | null;
+  difficulty?: PracticeDifficulty;
   onSelect: (i: number) => void;
   onFinishPoint: (session: ResumeInterviewSession) => void;
   onDone: () => void;
@@ -368,6 +371,7 @@ export function LivePhase({
             resume={resume}
             jd={jd}
             intel={intel}
+            difficulty={difficulty}
             onFinish={onFinishPoint}
           />
         )}
@@ -382,6 +386,7 @@ function PointProbe({
   resume,
   jd,
   intel,
+  difficulty = 'medium',
   onFinish,
 }: {
   point: AttackPoint;
@@ -389,6 +394,7 @@ function PointProbe({
   resume: string;
   jd: string;
   intel: IntelligenceItem[];
+  difficulty?: PracticeDifficulty;
   onFinish: (session: ResumeInterviewSession) => void;
 }) {
   const [turns, setTurns] = useState<ProbeTurn[]>([]);
@@ -401,7 +407,7 @@ function PointProbe({
     const res = await fetch('/api/interview/step', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ resume, jd, point, turns: history, intelligence: intel }),
+      body: JSON.stringify({ resume, jd, point, turns: history, intelligence: intel, difficulty }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error ?? '追问失败');

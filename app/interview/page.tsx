@@ -163,6 +163,7 @@ function InterviewApp() {
             presetRefs={prep.demo ? demoReference : undefined}
             durationMin={prep.practicePrefs.durationMin}
             startedAt={prep.trainingStartedAt}
+            difficulty={prep.practicePrefs.difficulty}
             onSelect={prep.setActiveIndex}
             onFinishPoint={prep.finishPoint}
             onDone={() => prep.goPhase('review')}

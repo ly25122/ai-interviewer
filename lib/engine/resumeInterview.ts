@@ -31,6 +31,7 @@ const PLAN_SYSTEM = `你是一名技术面试官。目标可能是公司实习�
 2. title 要具体，例如「订单系统 QPS 提升 30% 的测量方法」，不要「项目经历」这种空标题
 3. reason 一句话说清为什么问这个（intel_hit 要点明"情报显示这个组考过/强调过"）
 4. 优先技术实习常见深挖：项目数字、设计取舍、故障排查、与 JD 技能栈对齐处
+5. 必须按用户指定的难度改变追问角度，三档不要出成同一组标题
 
 只输出 JSON：
 {
@@ -101,6 +102,28 @@ const TRUST_LABEL: Record<string, string> = {
   low: '存疑·可能含广告',
 };
 
+function difficultyHint(difficulty: PracticeDifficulty): string {
+  if (difficulty === 'easy') {
+    return [
+      '【难度·舒适】',
+      '只问候选人做过的部分和成功路径：怎么做的、用了什么、自己负责哪一段。',
+      '标题写成「XX 是怎么做的 / 实现细节」，不要把失败路径、容量估算、数字口径对质当作主轴。',
+    ].join('');
+  }
+  if (difficulty === 'hard') {
+    return [
+      '【难度·加压】',
+      '至少一半标题必须落到失败路径、数字口径对质或权衡（例如「如果失败怎么办」「这个数字怎么测出来的」）。',
+      '禁止写成「实现细节」「如何保证」这种舒适/常规问法。同一考点也必须和常规档换角度。',
+      '开场就可以下潜，不要先寒暄机制。',
+    ].join('');
+  }
+  return [
+    '【难度·常规】',
+    '机制问清后再追一层边界。',
+    '标题可以点到边界，但不要用失败路径或数字口径对质当主轴——那是加压档。',
+  ].join('');
+}
 function clip(text: string, max: number): string {
   const t = text.trim();
   if (t.length <= max) return t;
@@ -155,12 +178,7 @@ export async function planResumeInterview(
   const resumeText = clip(resume, 12000);
   const jdText = clip(jd, 8000);
   const intel = buildIntel(intelligence);
-  const diffHint =
-    difficulty === 'easy'
-      ? '\n\n【难度】稳妥：先问机制和做过的部分，少追极端失败路径。'
-      : difficulty === 'hard'
-        ? '\n\n【难度】加压：多追失败路径、边界和口径，允许连续下潜。'
-        : '\n\n【难度】常规：机制问清后再追一层边界。';
+  const diffHint = `\n\n${difficultyHint(difficulty)}`;
   const modeHint =
     trainingMode === 'intel'
       ? '\n\n【训练模式】情报针对训练：优先且尽量只出 intel_hit。简历与 JD 只作上下文，不要把主战场放在简历数字或 JD 缺口上。'
@@ -228,6 +246,7 @@ export interface ResumeInterviewStepInput {
   point: AttackPoint;
   turns: Array<{ question: string; answer: string }>;
   intelligence?: IntelligenceItem[];
+  difficulty?: PracticeDifficulty;
 }
 
 export interface ResumeInterviewStepResult {
@@ -245,11 +264,13 @@ export async function resumeInterviewStep(
   const point = input.point;
 
   const intel = buildIntel(input.intelligence);
+  const difficulty = input.difficulty ?? 'medium';
 
   const context = [
     `【当前追问点】${point.title}`,
     `【类型】${point.source}`,
     `【为何问】${point.reason}`,
+    difficultyHint(difficulty),
     point.resumeQuote ? `【简历原文】${point.resumeQuote}` : '',
     point.jdRequirement ? `【JD 要求】${point.jdRequirement}` : '',
     point.intelQuote ? `【命中情报】${point.intelQuote}` : '',

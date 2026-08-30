@@ -7,7 +7,7 @@ import { ErrorNote } from './shared';
 const DURATIONS = [15, 25, 40];
 const COUNTS = [4, 6, 8];
 const DIFFS: Array<{ id: PracticeDifficulty; label: string; hint: string }> = [
-  { id: 'easy', label: '稳妥', hint: '先问做过的部分' },
+  { id: 'easy', label: '舒适', hint: '先问做过的部分' },
   { id: 'medium', label: '常规', hint: '机制问清再追一层' },
   { id: 'hard', label: '加压', hint: '多追失败路径和口径' },
 ];
