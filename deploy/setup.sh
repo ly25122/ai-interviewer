@@ -56,11 +56,20 @@ chmod 600 /root/.ssh/authorized_keys
 ssh-keygen -l -f /root/.ssh/authorized_keys
 
 echo "==> 写入环境变量"
-cat >"$APP_DIR/.env.local" <<EOF
-DEEPSEEK_API_KEY=$API_KEY
-DEEPSEEK_MODEL=deepseek-chat
-EOF
-chmod 600 "$APP_DIR/.env.local"
+ENV_FILE="$APP_DIR/.env.local"
+EXISTING_TAVILY=""
+EXISTING_BOCHA=""
+if [ -f "$ENV_FILE" ]; then
+	EXISTING_TAVILY="$(grep -E '^TAVILY_API_KEY=' "$ENV_FILE" | tail -1 | cut -d= -f2- || true)"
+	EXISTING_BOCHA="$(grep -E '^BOCHA_API_KEY=' "$ENV_FILE" | tail -1 | cut -d= -f2- || true)"
+fi
+{
+	echo "DEEPSEEK_API_KEY=$API_KEY"
+	echo "DEEPSEEK_MODEL=deepseek-chat"
+	[ -n "$EXISTING_TAVILY" ] && echo "TAVILY_API_KEY=$EXISTING_TAVILY"
+	[ -n "$EXISTING_BOCHA" ] && echo "BOCHA_API_KEY=$EXISTING_BOCHA"
+} >"$ENV_FILE"
+chmod 600 "$ENV_FILE"
 
 echo "==> 构建"
 cd "$APP_DIR"

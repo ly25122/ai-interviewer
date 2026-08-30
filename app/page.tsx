@@ -22,6 +22,7 @@ export default function HomePage() {
         <p className="anim-rise-late mt-6 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg">
           对照岗位 JD 把简历改到能经得起追问，再用这份简历做模拟面试。
           师兄经验、牛客帖、微信整理的面经——都放进面试里当辅助，不单独成一个产品。
+          也可以按公司/岗位自动检索公开面经。
         </p>
         <div className="anim-rise-late mt-10 flex flex-wrap items-center gap-4">
           <Link

@@ -359,7 +359,7 @@ function InputPhase({
         <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] sm:text-base">
           {demo
             ? '演示已放入一份真实风格的后端实习简历（某 211、电商中台秒杀项目）和对应的字节交易组 JD。你可以先读、先改，再按这份简历开面。'
-            : '放进简历和目标岗位 JD。可以先对照着改一版，再开始模拟面试。面经（师兄经验、牛客帖、微信整理）放在下面当辅助，用来校准这组会怎么考。'}
+            : '放进简历和目标岗位 JD。可以先对照着改一版，再开始模拟面试。面经（师兄经验、牛客帖、微信整理，或按公司/岗位自动检索）放在下面当辅助，用来校准这组会怎么考。'}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button
@@ -412,7 +412,7 @@ function InputPhase({
           waitHint="把职位要求也贴进来"
           defaultMode="paste"
         />
-        <IntelPanel items={intel} onChange={onIntelChange} />
+        <IntelPanel items={intel} onChange={onIntelChange} jd={jd} />
       </div>
 
       {resumeReady && jdReady && (
@@ -652,24 +652,75 @@ const TRUST_OPTIONS: { value: IntelTrust; label: string }[] = [
   { value: 'low', label: '存疑/可能含广告' },
 ];
 
+type CollectHit = {
+  title: string;
+  url: string;
+  snippet: string;
+  platform: string;
+  content: string;
+  relevanceScore: number;
+};
+
 function uid() {
   return Math.random().toString(36).slice(2, 9);
+}
+
+function guessTargetFromJd(jd: string): { name: string; role: string } {
+  const head = jd
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 8)
+    .join(' ');
+  const companies = [
+    '字节跳动',
+    '字节',
+    '阿里巴巴',
+    '阿里',
+    '腾讯',
+    '美团',
+    '网易',
+    '百度',
+    '拼多多',
+    '京东',
+    '快手',
+    '小红书',
+    '华为',
+    '蚂蚁',
+    '滴滴',
+    '商汤',
+    '微软',
+    'Google',
+    '谷歌',
+  ];
+  const name = companies.find((c) => head.includes(c)) ?? '';
+  const role = head.match(/(后端|前端|算法|数据|客户端|测试|运维|全栈)[^\s，,。/|]{0,16}/)?.[0] ?? '';
+  return { name, role };
 }
 
 function IntelPanel({
   items,
   onChange,
+  jd = '',
 }: {
   items: IntelligenceItem[];
   onChange: (items: IntelligenceItem[]) => void;
+  jd?: string;
 }) {
-  const [mode, setMode] = useState<'paste' | 'url' | 'file'>('paste');
+  const [mode, setMode] = useState<'paste' | 'url' | 'file' | 'auto'>('paste');
   const [label, setLabel] = useState('');
   const [text, setText] = useState('');
   const [trust, setTrust] = useState<IntelTrust>('high');
   const [url, setUrl] = useState('');
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
+  const guessed = guessTargetFromJd(jd);
+  const [collectName, setCollectName] = useState('');
+  const [collectDept, setCollectDept] = useState('');
+  const [collectRole, setCollectRole] = useState('');
+  const [collectType, setCollectType] = useState<'auto' | 'company' | 'school'>('auto');
+  const [hits, setHits] = useState<CollectHit[]>([]);
+  const [picked, setPicked] = useState<string[]>([]);
   const [screens, setScreens] = useState<Record<string, { verdict: Verdict; headline: string }>>(
     {},
   );
@@ -776,6 +827,77 @@ function IntelPanel({
     }
   }
 
+  async function collectAuto() {
+    const name = collectName.trim() || guessed.name;
+    const role = collectRole.trim() || guessed.role;
+    if (name.length < 2 || role.length < 2) {
+      setNote('请填写目标公司/学校和岗位（或专业）');
+      return;
+    }
+    setBusy(true);
+    setNote('正在检索公开面经…不含知乎、小红书。');
+    setHits([]);
+    setPicked([]);
+    try {
+      const res = await fetch('/api/interview/collect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name,
+          department: collectDept.trim(),
+          role: role,
+          targetType: collectType,
+          context: jd.trim().slice(0, 200),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? '检索失败');
+      const sources = (data.sources ?? []) as CollectHit[];
+      setHits(sources);
+      setPicked(sources.map((s) => s.url));
+      const warn = Array.isArray(data.warnings) ? data.warnings.join(' ') : '';
+      if (!sources.length) {
+        setNote(warn || '没有找到足够相关的公开面经，可换更具体的公司/岗位名，或改为手动粘贴。');
+      } else {
+        setNote(
+          `${warn ? `${warn} ` : ''}找到 ${sources.length} 条，勾选后加入。公开检索默认中等可信度。`,
+        );
+      }
+    } catch (e) {
+      setNote(e instanceof Error ? e.message : '自动检索失败，请改为手动粘贴');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function addHits() {
+    const existing = new Set(items.map((it) => it.url).filter(Boolean));
+    const chosen = hits.filter((h) => picked.includes(h.url) && !existing.has(h.url));
+    const next: IntelligenceItem[] = [...items];
+    let added = 0;
+    for (const hit of chosen) {
+      const content = (hit.content || hit.snippet).trim();
+      if (content.length < 20) continue;
+      next.push({
+        id: uid(),
+        source: 'web',
+        label: hit.title || hit.platform || '公开面经',
+        url: hit.url,
+        content: content.slice(0, 8000),
+        trust: 'medium',
+      });
+      added += 1;
+    }
+    if (!added) {
+      setNote('没有可加入的条目（可能已添加过，或正文太短）');
+      return;
+    }
+    onChange(next);
+    setHits([]);
+    setPicked([]);
+    setNote(`已加入 ${added} 条公开面经，会在出题时作为辅助。`);
+  }
+
   return (
     <div className="surface rounded-lg p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -787,7 +909,7 @@ function IntelPanel({
             </span>
           </h2>
           <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-            模拟面试时用来校准「这个组会怎么考」。不是独立功能，不加也能开面。
+            模拟面试时用来校准「这个组会怎么考」。可以粘贴、给链接，或按公司/岗位自动检索公开面经。不加也能开面。
           </p>
         </div>
       </div>
@@ -797,6 +919,7 @@ function IntelPanel({
           ['paste', '整理/粘贴'],
           ['url', '链接抓取'],
           ['file', '上传文件'],
+          ['auto', '自动检索'],
         ] as const).map(([m, t]) => (
           <button
             key={m}
@@ -816,25 +939,27 @@ function IntelPanel({
         ))}
       </div>
 
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        <input
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          placeholder="来源备注，如「师兄去年面这个组」"
-          className="field rounded-md px-3 py-2 text-sm"
-        />
-        <select
-          value={trust}
-          onChange={(e) => setTrust(e.target.value as IntelTrust)}
-          className="field rounded-md px-3 py-2 text-sm"
-        >
-          {TRUST_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              可信度：{o.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      {mode !== 'auto' && (
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="来源备注，如「师兄去年面这个组」"
+            className="field rounded-md px-3 py-2 text-sm"
+          />
+          <select
+            value={trust}
+            onChange={(e) => setTrust(e.target.value as IntelTrust)}
+            className="field rounded-md px-3 py-2 text-sm"
+          >
+            {TRUST_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                可信度：{o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="mt-2">
         {mode === 'paste' && (
@@ -892,6 +1017,86 @@ function IntelPanel({
             </span>
             <span className="mt-1 text-xs text-[var(--muted)]">点击选择，解析后加入辅助材料</span>
           </label>
+        )}
+        {mode === 'auto' && (
+          <div className="space-y-2">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <input
+                value={collectName}
+                onChange={(e) => setCollectName(e.target.value)}
+                placeholder={guessed.name ? `公司或学校，如「${guessed.name}」` : '公司或学校，如「字节跳动」'}
+                className="field rounded-md px-3 py-2 text-sm"
+              />
+              <input
+                value={collectRole}
+                onChange={(e) => setCollectRole(e.target.value)}
+                placeholder={guessed.role ? `岗位或专业，如「${guessed.role}」` : '岗位或专业，如「后端实习」'}
+                className="field rounded-md px-3 py-2 text-sm"
+              />
+              <input
+                value={collectDept}
+                onChange={(e) => setCollectDept(e.target.value)}
+                placeholder="部门/组（可选），如「电商」"
+                className="field rounded-md px-3 py-2 text-sm"
+              />
+              <select
+                value={collectType}
+                onChange={(e) => setCollectType(e.target.value as 'auto' | 'company' | 'school')}
+                className="field rounded-md px-3 py-2 text-sm"
+              >
+                <option value="auto">自动判断：公司 / 学校</option>
+                <option value="company">公司校招/社招</option>
+                <option value="school">学校复试</option>
+              </select>
+            </div>
+            <p className="text-xs text-[var(--muted)]">
+              只搜公开网页，不登录、不读 Cookie。知乎和小红书不会纳入自动检索。
+            </p>
+            <button
+              type="button"
+              onClick={collectAuto}
+              disabled={busy}
+              className="btn-primary rounded-md px-4 py-2 text-sm"
+            >
+              {busy ? '检索中…' : '开始检索公开面经'}
+            </button>
+            {hits.length > 0 && (
+              <ul className="space-y-1.5 rounded-md border border-[var(--line)] p-2">
+                {hits.map((hit) => (
+                  <li key={hit.url} className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      className="mt-1"
+                      checked={picked.includes(hit.url)}
+                      onChange={() =>
+                        setPicked((prev) =>
+                          prev.includes(hit.url)
+                            ? prev.filter((u) => u !== hit.url)
+                            : [...prev, hit.url],
+                        )
+                      }
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm leading-snug">{hit.title}</p>
+                      <p className="mt-0.5 truncate text-[11px] text-[var(--muted)]">
+                        {hit.platform} · {hit.url}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {hits.length > 0 && (
+              <button
+                type="button"
+                onClick={addHits}
+                disabled={!picked.length}
+                className="btn-primary rounded-md px-4 py-2 text-sm"
+              >
+                加入选中的 {picked.length} 条
+              </button>
+            )}
+          </div>
         )}
       </div>
 
