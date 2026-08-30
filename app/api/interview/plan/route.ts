@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { planResumeInterview } from '@/lib/engine/resumeInterview';
 import { LLMError } from '@/lib/llm';
-import type { IntelligenceItem, TrainingMode } from '@/lib/types';
+import type { IntelligenceItem, PracticeDifficulty, TrainingMode } from '@/lib/types';
 
 export const runtime = 'nodejs';
 export const maxDuration = 90;
@@ -12,6 +12,8 @@ export async function POST(request: Request) {
     jd?: string;
     intelligence?: IntelligenceItem[];
     trainingMode?: TrainingMode;
+    questionCount?: number;
+    difficulty?: PracticeDifficulty;
   };
   try {
     body = await request.json();
@@ -23,6 +25,11 @@ export async function POST(request: Request) {
   const jd = body.jd?.trim() ?? '';
   const intelligence = Array.isArray(body.intelligence) ? body.intelligence : [];
   const trainingMode: TrainingMode = body.trainingMode === 'intel' ? 'intel' : 'full';
+  const questionCount = [4, 6, 8].includes(Number(body.questionCount))
+    ? Number(body.questionCount)
+    : 6;
+  const difficulty: PracticeDifficulty =
+    body.difficulty === 'easy' || body.difficulty === 'hard' ? body.difficulty : 'medium';
 
   if (resume.length < 80) {
     return NextResponse.json({ error: '简历太短，请粘贴完整简历文本' }, { status: 400 });
@@ -32,7 +39,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const plan = await planResumeInterview(resume, jd, intelligence, trainingMode);
+    const plan = await planResumeInterview(resume, jd, intelligence, {
+      trainingMode,
+      questionCount,
+      difficulty,
+    });
     return NextResponse.json({ plan });
   } catch (error) {
     if (error instanceof LLMError) {

@@ -22,9 +22,11 @@ import {
 } from '@/lib/progress';
 import { buildPrepReadiness } from '@/lib/engine/readiness';
 import { buildReviewArchive, saveReviewArchive } from '@/lib/history';
+import { checkIntelJobFit } from '@/lib/engine/intelFit';
 import type {
   IntelligenceItem,
   InterviewPlan,
+  PracticePrefs,
   PrepPhase,
   ResumeInterviewSession,
   Syllabus,
@@ -58,6 +60,12 @@ export function usePrepProject(startDemo: boolean) {
   const [intel, setIntel] = useState<IntelligenceItem[]>(startDemo ? demoIntel : []);
   const [demo, setDemo] = useState(startDemo);
   const [trainingMode, setTrainingMode] = useState<TrainingMode>('full');
+  const [practicePrefs, setPracticePrefs] = useState<PracticePrefs>({
+    durationMin: 25,
+    questionCount: 6,
+    difficulty: 'medium',
+  });
+  const [trainingStartedAt, setTrainingStartedAt] = useState<number | null>(null);
   const savedProgress = useSyncExternalStore(
     subscribeProgress,
     getProgressSnapshot,
@@ -112,6 +120,7 @@ export function usePrepProject(startDemo: boolean) {
     setDemo(false);
     setLive(false);
     setTrainingMode('full');
+    setTrainingStartedAt(null);
     setPhase('setup');
   }
 
@@ -181,20 +190,28 @@ export function usePrepProject(startDemo: boolean) {
       setError('');
       return true;
     }
-    if (intel.length === 0) {
-      setError('先加入至少一条情报');
+    const fit = checkIntelJobFit({ items: intel, company, role, jd });
+    if (!fit.ok) {
+      setError(fit.reason);
       return false;
     }
     setSummarizing(true);
     setError('');
     try {
+      const newest = [...intel].sort((a, b) => {
+        const da = Date.parse(a.publishedAt ?? '') || 0;
+        const db = Date.parse(b.publishedAt ?? '') || 0;
+        return db - da;
+      });
       const res = await fetch('/api/syllabus', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           company,
           role,
-          posts: intel.slice(0, 8).map((it) => ({ content: it.content, title: it.label })),
+          posts: newest.slice(0, 8).map((it) => ({ content: it.content, title: it.label })),
+          jd,
+          resume,
         }),
       });
       const data = await res.json();
@@ -214,18 +231,25 @@ export function usePrepProject(startDemo: boolean) {
     if (ok) goPhase('profile');
   }
 
-  async function startTraining(mode: TrainingMode) {
+  async function startTraining(mode: TrainingMode, prefs: PracticePrefs = practicePrefs) {
     setTrainingMode(mode);
+    setPracticePrefs(prefs);
     if (demo && plan) {
-      const next =
+      const pool =
         mode === 'intel'
-          ? { ...demoPlan, points: demoPlan.points.filter((p) => p.source === 'intel_hit') }
-          : demoPlan;
+          ? demoPlan.points.filter((p) => p.source === 'intel_hit')
+          : demoPlan.points;
+      const next = { ...demoPlan, points: pool.slice(0, prefs.questionCount) };
+      const nextIds = new Set(next.points.map((p) => p.id));
+      const nextSessions = Object.fromEntries(
+        Object.entries(demoSessions).filter(([id]) => nextIds.has(id)),
+      );
       setPlan(next);
-      setSessions(demoSessions);
+      setSessions(nextSessions);
       setActiveIndex(0);
       setLive(true);
       setPhase('practice');
+      setTrainingStartedAt(Date.now());
       return;
     }
     setLoading(true);
@@ -234,7 +258,14 @@ export function usePrepProject(startDemo: boolean) {
       const res = await fetch('/api/interview/plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resume, jd, intelligence: intel, trainingMode: mode }),
+        body: JSON.stringify({
+          resume,
+          jd,
+          intelligence: intel,
+          trainingMode: mode,
+          questionCount: prefs.questionCount,
+          difficulty: prefs.difficulty,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? '生成失败');
@@ -244,6 +275,7 @@ export function usePrepProject(startDemo: boolean) {
       setDemo(false);
       setLive(true);
       setPhase('practice');
+      setTrainingStartedAt(Date.now());
     } catch (e) {
       setError(e instanceof Error ? e.message : '生成失败');
     } finally {
@@ -300,6 +332,8 @@ export function usePrepProject(startDemo: boolean) {
     intel,
     demo,
     trainingMode,
+    practicePrefs,
+    trainingStartedAt,
     progressRecords,
     activePoint,
     readiness,

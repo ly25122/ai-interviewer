@@ -62,10 +62,7 @@ export function IntelligenceHub({
   const [url, setUrl] = useState('');
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
-  const [collectName, setCollectName] = useState(company);
   const [collectDept, setCollectDept] = useState('');
-  const [collectRole, setCollectRole] = useState(role);
-  const [collectType, setCollectType] = useState<'auto' | 'company' | 'school'>('auto');
   const [hits, setHits] = useState<CollectHit[]>([]);
   const [picked, setPicked] = useState<string[]>([]);
   const [usedEngines, setUsedEngines] = useState<string[]>(['tavily', 'bocha']);
@@ -177,14 +174,12 @@ export function IntelligenceHub({
   }
 
   async function collectAuto() {
-    const name = collectName.trim() || company;
-    const r = collectRole.trim() || role;
-    if (name.length < 2 || r.length < 2) {
-      setNote('请填写目标公司/学校和岗位（或专业）');
+    if (company.trim().length < 2 || role.trim().length < 2) {
+      setNote('先回上一页把公司和岗位填好');
       return;
     }
     setBusy(true);
-    setNote('正在检索公开面经…');
+    setNote('正在检索公开面经，按时间往近收…');
     setHits([]);
     setPicked([]);
     try {
@@ -192,10 +187,10 @@ export function IntelligenceHub({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name,
+          name: company.trim(),
           department: collectDept.trim(),
-          role: r,
-          targetType: collectType,
+          role: role.trim(),
+          targetType: 'auto',
           context: jd.trim().slice(0, 200),
         }),
       });
@@ -210,14 +205,20 @@ export function IntelligenceHub({
             .filter(Boolean),
         );
       }
-      const sources = (data.sources ?? []) as CollectHit[];
+      const sources = ((data.sources ?? []) as CollectHit[]).slice().sort((a, b) => {
+        const da = Date.parse(a.publishedAt ?? '') || 0;
+        const db = Date.parse(b.publishedAt ?? '') || 0;
+        return db - da;
+      });
       setHits(sources);
       setPicked(sources.map((s) => s.url));
       const warn = Array.isArray(data.warnings) ? data.warnings.join(' ') : '';
       if (!sources.length) {
-        setNote(warn || '没有找到足够相关的公开面经，可换更具体的公司/岗位名，或改为手动粘贴。');
+        setNote(warn || '没找到够近的公开面经。可以改部门名再搜，或自己粘贴。');
       } else {
-        setNote(`${warn ? `${warn} ` : ''}找到 ${sources.length} 条，勾选后加入。公开检索默认中等可信度。`);
+        setNote(
+          `${warn ? `${warn} ` : ''}找到 ${sources.length} 条，已按时间从近到远排。勾选后加入。`,
+        );
       }
     } catch (e) {
       setNote(e instanceof Error ? e.message : '自动检索失败，请改为手动粘贴');
@@ -264,7 +265,7 @@ export function IntelligenceHub({
             {company} · {role}
           </h1>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            左边采集，右边是已收入的情报。下一步会聚成岗位画像。
+            面经会抽高频考点和原题，聚成下一页的岗位画像。条数太少、又对不上这个岗位时，不会硬画一张图。
           </p>
         </div>
         <span className="text-[11px] text-[var(--muted)]">已收集 {items.length} 条</span>
@@ -397,34 +398,16 @@ export function IntelligenceHub({
                   );
                 })}
               </div>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <input
-                  value={collectName}
-                  onChange={(e) => setCollectName(e.target.value)}
-                  placeholder="公司或学校"
-                  className="field rounded-md px-2.5 py-1.5 text-xs"
-                />
-                <input
-                  value={collectRole}
-                  onChange={(e) => setCollectRole(e.target.value)}
-                  placeholder="岗位或专业"
-                  className="field rounded-md px-2.5 py-1.5 text-xs"
-                />
+              <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
                 <input
                   value={collectDept}
                   onChange={(e) => setCollectDept(e.target.value)}
-                  placeholder="部门/组（可选）"
+                  placeholder="部门/组（可选），如「电商交易」"
                   className="field rounded-md px-2.5 py-1.5 text-xs"
                 />
-                <select
-                  value={collectType}
-                  onChange={(e) => setCollectType(e.target.value as 'auto' | 'company' | 'school')}
-                  className="field rounded-md px-2.5 py-1.5 text-xs"
-                >
-                  <option value="auto">自动判断：公司 / 学校</option>
-                  <option value="company">公司校招/社招</option>
-                  <option value="school">学校复试</option>
-                </select>
+                <p className="self-center text-[11px] text-[var(--muted)]">
+                  按 {company} · {role} 检索
+                </p>
               </div>
               <button
                 type="button"
@@ -435,7 +418,7 @@ export function IntelligenceHub({
                 {busy ? '检索中…' : '开始检索公开面经'}
               </button>
               {hits.length > 0 && (
-                <ul className="max-h-48 space-y-1 overflow-auto rounded-md border border-[var(--line)] bg-[var(--paper-lift)] p-1.5">
+                <ul className="max-h-64 space-y-1 overflow-auto rounded-md border border-[var(--line)] bg-[var(--paper-lift)] p-1.5">
                   {hits.map((hit) => (
                     <li key={hit.url} className="flex items-start gap-2 rounded px-1 py-1">
                       <input
@@ -492,7 +475,14 @@ export function IntelligenceHub({
             </p>
           ) : (
             <ul className="mt-2 max-h-[28rem] space-y-1.5 overflow-auto">
-              {items.map((it) => {
+              {items
+                .slice()
+                .sort((a, b) => {
+                  const da = Date.parse(a.publishedAt ?? '') || 0;
+                  const db = Date.parse(b.publishedAt ?? '') || 0;
+                  return db - da;
+                })
+                .map((it) => {
                 const meta = INTEL_SOURCE_META[it.source];
                 const screen = screens[it.id];
                 const site = it.platform || hostFromUrl(it.url);

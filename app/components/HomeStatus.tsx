@@ -37,39 +37,39 @@ export function HomeStatus() {
   const lastArchive = archives[0];
   const recent = archives.slice(0, 3);
 
-  let eyebrow = '近期状况';
-  let headline = '还没开过一场';
-  let body = '不知道这家怎么考，是最耗人的。先把情报凑齐，再针对性开练。';
+  let eyebrow = '准备进度';
+  let headline = '尚未开始';
+  let body = '指定目标公司与岗位后，即可收集面经并开始训练。';
 
   if (lastArchive) {
     eyebrow = formatArchiveTime(lastArchive.at);
     headline = lastArchive.company;
     body =
       lastArchive.shaky > lastArchive.verified
-        ? `「${lastArchive.role}」需加强 ${lastArchive.shaky} 个点。点开能回看当时怎么答崩的。`
-        : `「${lastArchive.role}」已验证 ${lastArchive.verified} 个。回看问答，比再刷一堆面经有用。`;
+        ? `「${lastArchive.role}」仍有 ${lastArchive.shaky} 个考点需加强，可回看当场问答。`
+        : `「${lastArchive.role}」已验证 ${lastArchive.verified} 个考点。建议优先回看当场记录。`;
   } else if (summary.today.count > 0) {
-    eyebrow = '今天';
+    eyebrow = '今日';
     if (summary.today.collapsed > summary.today.verified) {
-      headline = '今天被追问打回来了';
-      body = `练了 ${summary.today.count} 个点，经不起追问 ${summary.today.collapsed} 个。这不是丢人，是终于知道该补哪。`;
+      headline = '今日训练：追问未通过较多';
+      body = `已练习 ${summary.today.count} 个考点，其中 ${summary.today.collapsed} 个经不起追问。可从复盘中查看具体缺口。`;
     } else if (summary.today.verified > 0) {
-      headline = '今天撑住了几轮';
-      body = `练了 ${summary.today.count} 个点，已验证 ${summary.today.verified} 个。别停，把剩下的缺口补完。`;
+      headline = '今日已验证部分考点';
+      body = `已练习 ${summary.today.count} 个考点，其中 ${summary.today.verified} 个已通过追问。`;
     } else {
-      headline = '今天开练了';
-      body = `练了 ${summary.today.count} 个点。回头看复盘，比再刷一堆面经有用。`;
+      headline = '今日已开始训练';
+      body = `已练习 ${summary.today.count} 个考点。完成后可在复盘中查看问答记录。`;
     }
   } else if (summary.streak > 1) {
-    eyebrow = '连续在练';
-    headline = `已经连续 ${summary.streak} 天`;
+    eyebrow = '连续训练';
+    headline = `已连续 ${summary.streak} 天`;
     body = last
-      ? `上次练到「${last.pointTitle}」。回来接着补，比重新开始轻松。`
-      : '节奏在，别断。';
+      ? `上次练习「${last.pointTitle}」。可从尚未覆盖或需加强的考点继续。`
+      : `已连续训练 ${summary.streak} 天。`;
   } else if (last) {
     eyebrow = formatDay(last.at);
-    headline = '有一阵没练了';
-    body = `上次是「${last.pointTitle}」。捡起来从缺口开始，不必重头再来。`;
+    headline = '距上次训练已有间隔';
+    body = `上次练习「${last.pointTitle}」。可从缺口继续，不必重新收集情报。`;
   }
 
   return (
@@ -136,8 +136,8 @@ export function HomeStatus() {
             </div>
             <p className="mt-4 text-xs text-white/40">
               {summary.totalCount > 0
-                ? `一共练过 ${summary.totalCount} 个点${summary.streak > 0 ? ` · 连续 ${summary.streak} 天` : ''}`
-                : '练完一场，问答原文会留在这台设备上。'}
+                ? `累计练习 ${summary.totalCount} 个考点${summary.streak > 0 ? ` · 连续 ${summary.streak} 天` : ''}`
+                : '训练记录保存在本机，不会上传。'}
             </p>
           </>
         )}

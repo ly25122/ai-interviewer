@@ -124,6 +124,8 @@ export interface Syllabus {
   /** 由多少篇面经聚合而来，需向用户明示以交代可信度 */
   postCount: number;
   generatedAt: string;
+  /** 情报不足时，部分考点由模型根据 JD / 简历补全 */
+  aiAugmented?: boolean;
 }
 
 /* ===================== 第二层：自评 ===================== */
@@ -199,6 +201,14 @@ export type PrepPhase = 'setup' | 'intel' | 'profile' | 'practice' | 'review';
 
 /** 针对性训练：完整模拟，或只练情报/高频弱点 */
 export type TrainingMode = 'full' | 'intel';
+
+export type PracticeDifficulty = 'easy' | 'medium' | 'hard';
+
+export interface PracticePrefs {
+  durationMin: number;
+  questionCount: number;
+  difficulty: PracticeDifficulty;
+}
 
 /**
  * 一次备战围绕一个目标岗位展开。

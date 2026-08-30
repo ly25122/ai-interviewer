@@ -11,6 +11,7 @@ describe('generateQueryPlan', () => {
     expect(plans.length).toBeGreaterThan(0);
     expect(plans.some((p) => p.query.includes('面试经验') || p.intent === '面试流程')).toBe(true);
     expect(plans.some((p) => p.query.includes('site:nowcoder.com'))).toBe(true);
+    expect(plans.some((p) => p.query.includes(String(new Date().getFullYear())))).toBe(true);
     expect(plans.every((p) => p.query.includes('字节跳动'))).toBe(true);
   });
 

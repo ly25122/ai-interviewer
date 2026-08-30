@@ -247,6 +247,67 @@ export function StackedMeter({
   );
 }
 
+export function WeekTrend({
+  days,
+}: {
+  days: Array<{ date: string; count: number; avgScore: number }>;
+}) {
+  const weekday = ['日', '一', '二', '三', '四', '五', '六'];
+  const maxCount = Math.max(1, ...days.map((d) => d.count));
+  const w = 280;
+  const h = 88;
+  const pad = 8;
+  const innerW = w - pad * 2;
+  const innerH = h - pad * 2;
+  const xs = days.map((_, i) => pad + (i + 0.5) * (innerW / days.length));
+  const line = days
+    .map((d, i) => {
+      const y = pad + innerH - (d.count === 0 ? 0 : (d.avgScore / 100) * innerH);
+      return `${i === 0 ? 'M' : 'L'} ${xs[i]} ${y}`;
+    })
+    .join(' ');
+
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-xs text-[var(--muted)]">近 7 天</p>
+        <p className="text-[10px] text-[var(--muted)]">柱：题量 · 线：均分</p>
+      </div>
+      <svg viewBox={`0 0 ${w} ${h}`} className="mt-2 h-24 w-full" aria-hidden>
+        {days.map((d, i) => {
+          const bw = innerW / days.length - 6;
+          const bh = d.count === 0 ? 3 : (d.count / maxCount) * innerH;
+          return (
+            <rect
+              key={d.date}
+              x={xs[i] - bw / 2}
+              y={pad + innerH - bh}
+              width={bw}
+              height={bh}
+              rx="2"
+              fill={d.count === 0 ? 'rgba(15,23,20,0.08)' : 'var(--accent)'}
+              opacity="0.45"
+            />
+          );
+        })}
+        <path d={line} fill="none" stroke="var(--ink)" strokeWidth="1.6" />
+        {days.map((d, i) =>
+          d.count === 0 ? null : (
+            <circle key={`${d.date}-dot`} cx={xs[i]} cy={pad + innerH - (d.avgScore / 100) * innerH} r="2.2" fill="var(--ink)" />
+          ),
+        )}
+      </svg>
+      <div className="flex">
+        {days.map((d) => (
+          <span key={d.date} className="flex-1 text-center text-[10px] text-[var(--muted)]">
+            {weekday[new Date(`${d.date}T12:00:00`).getDay()] ?? ''}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function WeekBars({
   days,
 }: {

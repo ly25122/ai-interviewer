@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CoverageRing, Meter } from '@/app/components/ProgressViz';
 import { scoreLabel, scoreSession } from '@/lib/progress';
 import type {
@@ -13,6 +13,53 @@ import type {
 } from '@/lib/types';
 import { TurnReplay } from './TurnReplay';
 import { ResumeSheet, SOURCE_META } from './shared';
+
+function formatClock(totalSec: number) {
+  const n = Math.max(0, totalSec);
+  const m = Math.floor(n / 60);
+  const s = n % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function TrainingClock({
+  durationMin,
+  startedAt,
+}: {
+  durationMin: number;
+  startedAt: number;
+}) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [startedAt]);
+
+  const elapsed = Math.max(0, Math.floor((now - startedAt) / 1000));
+  const total = Math.max(1, durationMin * 60);
+  const remain = total - elapsed;
+  const overtime = remain < 0;
+  const ratio = Math.min(1, elapsed / total);
+
+  return (
+    <div className="mt-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <p className={`text-sm tabular-nums ${overtime ? 'text-[var(--warn)]' : ''}`}>
+          {formatClock(elapsed)}
+          <span className="text-[11px] text-[var(--muted)]"> / {formatClock(total)}</span>
+        </p>
+        <p className={`text-[11px] tabular-nums ${overtime ? 'text-[var(--warn)]' : 'text-[var(--muted)]'}`}>
+          {overtime ? `已超时 ${formatClock(-remain)}` : `剩余 ${formatClock(remain)}`}
+        </p>
+      </div>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/8">
+        <div
+          className={`h-full rounded-full ${overtime ? 'bg-[var(--warn)]' : 'bg-[var(--accent)]'}`}
+          style={{ width: `${Math.max(4, ratio * 100)}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 function ReferenceAnswerBlock({
   point,
@@ -146,6 +193,8 @@ export function LivePhase({
   intel,
   sessions,
   presetRefs,
+  durationMin,
+  startedAt,
   onSelect,
   onFinishPoint,
   onDone,
@@ -158,20 +207,29 @@ export function LivePhase({
   intel: IntelligenceItem[];
   sessions: Record<string, ResumeInterviewSession>;
   presetRefs?: Record<string, ReferenceAnswerData>;
+  durationMin?: number;
+  startedAt?: number | null;
   onSelect: (i: number) => void;
   onFinishPoint: (session: ResumeInterviewSession) => void;
   onDone: () => void;
 }) {
   const allDone = plan.points.every((p) => sessions[p.id]);
-  const done = Object.keys(sessions).length;
-  const verified = Object.values(sessions).filter((s) => s.outcome === 'verified').length;
+  const done = plan.points.filter((p) => sessions[p.id]).length;
+  const verified = plan.points.filter((p) => sessions[p.id]?.outcome === 'verified').length;
   const left = plan.points.length - done;
+  const [fallbackStart] = useState(() => Date.now());
+  const clockStart = startedAt ?? fallbackStart;
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[260px_1fr]">
       <aside className="order-2 space-y-3 lg:sticky lg:top-4 lg:order-1">
         <div className="surface rounded-lg p-4">
           <p className="text-xs tracking-[0.16em] text-[var(--muted)]">训练进度</p>
+          <p className="mt-1 text-[11px] text-[var(--muted)]">
+            {plan.points.length} 题
+            {durationMin ? ` · 设定 ${durationMin} 分钟` : ''}
+          </p>
+          {durationMin ? <TrainingClock durationMin={durationMin} startedAt={clockStart} /> : null}
           <div className="mt-3">
             <CoverageRing
               value={done}
@@ -200,38 +258,65 @@ export function LivePhase({
         </div>
 
         <div className="surface rounded-lg p-3">
-          <p className="px-1 text-xs tracking-[0.16em] text-[var(--muted)]">追问点</p>
-          <div className="mt-2 space-y-1.5">
-            {plan.points.map((p, i) => {
-              const doneSession = sessions[p.id];
+          <p className="px-1 text-xs tracking-[0.16em] text-[var(--muted)]">题目</p>
+          <div className="mt-2 space-y-3">
+            {(
+              [
+                ['intel_hit', '情报命中'],
+                ['resume_match', 'JD × 简历'],
+                ['resume_risk', '简历风险'],
+                ['jd_gap', 'JD 缺口'],
+              ] as const
+            ).map(([src, group]) => {
+              const groupPoints = plan.points
+                .map((p, i) => ({ p, i }))
+                .filter(({ p }) => p.source === src);
+              if (groupPoints.length === 0) return null;
               return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => onSelect(i)}
-                  className={`block w-full rounded-md border px-3 py-2 text-left text-xs transition ${
-                    i === index
-                      ? 'border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]'
-                      : 'border-[var(--line)] bg-white text-[var(--ink)] hover:border-black/25'
-                  }`}
-                >
-                  <span className="line-clamp-2">{p.title}</span>
-                  {doneSession && (
-                    <span
-                      className={`mt-1 block ${
-                        i === index
-                          ? 'text-white/70'
-                          : doneSession.outcome === 'verified'
-                            ? 'text-[var(--ok)]'
-                            : 'text-[var(--warn)]'
-                      }`}
-                    >
-                      {doneSession.outcome === 'verified' ? '经得起追问' : '经不起追问'}
-                      {' · '}
-                      {scoreSession(doneSession)} 分
-                    </span>
-                  )}
-                </button>
+                <div key={src}>
+                  <p className="px-1 text-[10px] text-[var(--muted)]">{group}</p>
+                  <div className="mt-1 space-y-1.5">
+                    {groupPoints.map(({ p, i }) => {
+                      const doneSession = sessions[p.id];
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => onSelect(i)}
+                          className={`block w-full rounded-md border px-3 py-2 text-left text-xs transition ${
+                            i === index
+                              ? 'border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]'
+                              : 'border-[var(--line)] bg-white text-[var(--ink)] hover:border-black/25'
+                          }`}
+                        >
+                          <span className="line-clamp-2">{p.title}</span>
+                          <span
+                            className={`mt-1 inline-block rounded px-1.5 py-0.5 text-[10px] ${
+                              i === index ? 'bg-white/15 text-white/80' : SOURCE_META[p.source].tone
+                            }`}
+                          >
+                            {SOURCE_META[p.source].label}
+                          </span>
+                          {doneSession && (
+                            <span
+                              className={`mt-1 block ${
+                                i === index
+                                  ? 'text-white/70'
+                                  : doneSession.outcome === 'verified'
+                                    ? 'text-[var(--ok)]'
+                                    : 'text-[var(--warn)]'
+                              }`}
+                            >
+                              {doneSession.outcome === 'verified' ? '经得起追问' : '经不起追问'}
+                              {' · '}
+                              {scoreSession(doneSession)} 分
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })}
           </div>

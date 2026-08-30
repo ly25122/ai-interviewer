@@ -126,8 +126,11 @@ function InterviewApp() {
           <ProfilePanel
             company={prep.company}
             role={prep.role}
+            resume={prep.resume}
+            jd={prep.jd}
             intel={prep.intel}
             syllabus={prep.syllabus}
+            demo={prep.demo}
             error={prep.error}
             onBack={() => prep.goPhase('intel')}
             onNext={() => prep.goPhase('practice')}
@@ -142,6 +145,7 @@ function InterviewApp() {
             syllabus={prep.syllabus}
             loading={prep.loading}
             error={prep.error}
+            prefs={prep.practicePrefs}
             onStart={prep.startTraining}
             onBack={() => prep.goPhase('profile')}
           />
@@ -157,6 +161,8 @@ function InterviewApp() {
             intel={prep.intel}
             sessions={prep.sessions}
             presetRefs={prep.demo ? demoReference : undefined}
+            durationMin={prep.practicePrefs.durationMin}
+            startedAt={prep.trainingStartedAt}
             onSelect={prep.setActiveIndex}
             onFinishPoint={prep.finishPoint}
             onDone={() => prep.goPhase('review')}

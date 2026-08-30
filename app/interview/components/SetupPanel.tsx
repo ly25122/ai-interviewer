@@ -56,11 +56,33 @@ export function SetupPanel({
           <button type="button" onClick={onDemo} className="btn-ghost rounded-md px-3 py-1.5 text-xs">
             先看演示
           </button>
-          <button type="button" onClick={onSample} className="btn-ghost rounded-md px-3 py-1.5 text-xs">
+          <button
+            type="button"
+            onClick={onSample}
+            className="btn-primary rounded-md px-4 py-2 text-sm font-medium"
+          >
             填入示例
           </button>
         </div>
       </div>
+
+      {!resume.trim() && !jd.trim() && !demo && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border-2 border-[var(--accent)] bg-[rgba(31,122,102,0.08)] px-4 py-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-[var(--ink)]">还没有自己的材料</p>
+            <p className="mt-0.5 text-xs text-[var(--muted)]">
+              可先填入一份电商后端实习示例，再走收集情报与训练。
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onSample}
+            className="btn-primary shrink-0 rounded-md px-4 py-2 text-sm font-medium"
+          >
+            填入示例
+          </button>
+        </div>
+      )}
 
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <label className="block">

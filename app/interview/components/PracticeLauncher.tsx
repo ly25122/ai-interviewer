@@ -1,7 +1,16 @@
 'use client';
 
-import type { Syllabus, TrainingMode } from '@/lib/types';
+import { useState } from 'react';
+import type { PracticeDifficulty, PracticePrefs, Syllabus, TrainingMode } from '@/lib/types';
 import { ErrorNote } from './shared';
+
+const DURATIONS = [15, 25, 40];
+const COUNTS = [4, 6, 8];
+const DIFFS: Array<{ id: PracticeDifficulty; label: string; hint: string }> = [
+  { id: 'easy', label: '稳妥', hint: '先问做过的部分' },
+  { id: 'medium', label: '常规', hint: '机制问清再追一层' },
+  { id: 'hard', label: '加压', hint: '多追失败路径和口径' },
+];
 
 export function PracticeLauncher({
   company,
@@ -10,6 +19,7 @@ export function PracticeLauncher({
   syllabus,
   loading,
   error,
+  prefs,
   onStart,
   onBack,
 }: {
@@ -19,10 +29,16 @@ export function PracticeLauncher({
   syllabus?: Syllabus;
   loading: boolean;
   error: string;
-  onStart: (mode: TrainingMode) => void;
+  prefs: PracticePrefs;
+  onStart: (mode: TrainingMode, prefs: PracticePrefs) => void;
   onBack: () => void;
 }) {
+  const [durationMin, setDurationMin] = useState(prefs.durationMin);
+  const [questionCount, setQuestionCount] = useState(prefs.questionCount);
+  const [difficulty, setDifficulty] = useState<PracticeDifficulty>(prefs.difficulty);
+  const next: PracticePrefs = { durationMin, questionCount, difficulty };
   const topics = syllabus?.topics.length ?? 0;
+
   return (
     <div className="space-y-5">
       <div>
@@ -30,36 +46,98 @@ export function PracticeLauncher({
           {company} · {role}
         </h1>
         <p className="mt-1 text-xs text-[var(--muted)]">
-          面试提纲在后台生成。选一种练法，系统会按简历 × JD × 情报出题。
+          先定时长、题量和难度，再选练法。提纲按你的简历、JD 和情报出。
         </p>
+      </div>
+
+      <div className="surface grid gap-4 rounded-lg p-4 sm:grid-cols-3">
+        <fieldset>
+          <legend className="text-[11px] text-[var(--muted)]">时长</legend>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {DURATIONS.map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setDurationMin(n)}
+                className={`rounded-md px-2.5 py-1 text-xs ${
+                  durationMin === n
+                    ? 'bg-[var(--ink)] text-[var(--paper)]'
+                    : 'border border-[var(--line)] text-[var(--muted)]'
+                }`}
+              >
+                {n} 分钟
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend className="text-[11px] text-[var(--muted)]">题目数量</legend>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {COUNTS.map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setQuestionCount(n)}
+                className={`rounded-md px-2.5 py-1 text-xs ${
+                  questionCount === n
+                    ? 'bg-[var(--ink)] text-[var(--paper)]'
+                    : 'border border-[var(--line)] text-[var(--muted)]'
+                }`}
+              >
+                {n} 题
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend className="text-[11px] text-[var(--muted)]">难度</legend>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {DIFFS.map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                title={d.hint}
+                onClick={() => setDifficulty(d.id)}
+                className={`rounded-md px-2.5 py-1 text-xs ${
+                  difficulty === d.id
+                    ? 'bg-[var(--ink)] text-[var(--paper)]'
+                    : 'border border-[var(--line)] text-[var(--muted)]'
+                }`}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <button
           type="button"
           disabled={loading}
-          onClick={() => onStart('full')}
+          onClick={() => onStart('full', next)}
           className="surface rounded-lg p-5 text-left transition hover:border-[var(--accent)]"
         >
-          <p className="text-xs tracking-[0.16em] text-[var(--accent)]">完整模拟</p>
+          <p className="text-xs text-[var(--accent)]">完整模拟</p>
           <p className="mt-2 font-brand text-2xl">按真实面试走一遍</p>
           <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
-            情报命中、简历风险、JD 缺口都会问。适合开面之前过一遍。
+            {durationMin} 分钟 · {questionCount} 题 · {DIFFS.find((d) => d.id === difficulty)?.label}
+            。情报、简历风险、JD 缺口都会问。
           </p>
         </button>
         <button
           type="button"
           disabled={loading || intelCount === 0}
-          onClick={() => onStart('intel')}
+          onClick={() => onStart('intel', next)}
           className="surface rounded-lg p-5 text-left transition hover:border-[var(--accent)]"
         >
-          <p className="text-xs tracking-[0.16em] text-[var(--accent)]">情报针对训练</p>
+          <p className="text-xs text-[var(--accent)]">情报针对训练</p>
           <p className="mt-2 font-brand text-2xl">只练这个组爱考的</p>
           <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
             {topics > 0
-              ? `围绕已聚合的 ${topics} 个高频考点追问。`
+              ? `围绕已聚合的 ${topics} 个高频考点，出 ${questionCount} 题。`
               : intelCount > 0
-                ? `已有 ${intelCount} 条情报，会优先问里面反复出现的点。`
+                ? `已有 ${intelCount} 条情报，优先问里面反复出现的点。`
                 : '需要先收集情报。'}
           </p>
         </button>

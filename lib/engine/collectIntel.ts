@@ -51,7 +51,21 @@ const INTERVIEW_TERMS = [
   '笔试',
   '面试题',
 ];
-const NOISE_TERMS = ['课程推广', '培训报名', '招聘广告', '简历代写', '刷题班'];
+const NOISE_TERMS = [
+  '课程推广',
+  '培训报名',
+  '招聘广告',
+  '简历代写',
+  '刷题班',
+  '宣讲会',
+  '招聘启动',
+  '就业信息',
+  '工作总结',
+  '招聘快讯',
+  '内推专场',
+  '校园招聘',
+  '招满即止',
+];
 const AUTO_EXCLUDED = ['zhihu.com', 'xiaohongshu.com'];
 const USER_AGENT =
   'InterviewIntelligence/0.1 (public-web-research; +https://github.com/ly25122/ai-interviewer)';
@@ -120,11 +134,44 @@ function quoted(value: string): string {
   return value ? `"${value}"` : '';
 }
 
-export function generateQueryPlan(target: CollectTarget, maxQueries = 6) {
+function recencyYear(now = new Date()) {
+  return now.getFullYear();
+}
+
+function isRecencyQuery(query: string): boolean {
+  return /今年|20\d{2}|26届|27届|春招|秋招/.test(query);
+}
+
+/** 查询词已带年份时，把搜索窗收到当年；其余不限，以免漏掉去年发的应届面经。 */
+function recencyFreshness(query: string, now = new Date()): string {
+  if (!isRecencyQuery(query)) return 'noLimit';
+  const y = recencyYear(now);
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-01-01..${y}-${m}-${d}`;
+}
+
+/**
+ * 引擎经常不给 publishedAt。只有标题里出现完整年月日才补，
+ * 不用「2026届」这种届次冒充发布日期。
+ */
+function inferPublishedAt(title?: string, extra?: string): string | undefined {
+  const text = `${title ?? ''} ${extra ?? ''}`;
+  const m = text.match(/(20[2-3]\d)[-./年](\d{1,2})[-./月](\d{1,2})/);
+  if (!m) return undefined;
+  const month = m[2].padStart(2, '0');
+  const day = m[3].padStart(2, '0');
+  if (Number(month) > 12 || Number(day) > 31) return undefined;
+  return `${m[1]}-${month}-${day}`;
+}
+
+export function generateQueryPlan(target: CollectTarget, maxQueries = 8) {
   const name = target.name.trim();
   const role = target.role.trim();
   const department = (target.department ?? '').trim();
   const context = (target.context ?? '').trim();
+  const year = recencyYear();
+  const cohort = `${String(year).slice(2)}届`;
   const isSchool =
     target.targetType === 'school' ||
     (target.targetType !== 'company' && /大学|学院|研究院/.test(name));
@@ -147,6 +194,12 @@ export function generateQueryPlan(target: CollectTarget, maxQueries = 6) {
     if (q && !plans.some((p) => p.query === q)) plans.push({ query: q, platform, intent });
   };
   for (const [intent, suffix] of intents) add(`${base} ${suffix}`, 'general', intent);
+  if (isSchool) {
+    add(`${base} ${year} 复试`, 'general', '当年复试');
+  } else {
+    add(`${base} ${year} 面经`, 'general', '当年面经');
+    add(`${quoted(name)} ${quoted(role)} ${cohort} 一面`, 'general', '应届面经');
+  }
   const suffix = isSchool ? '复试 面经' : '面试经验';
   for (const [domain, label, intent] of [
     ['nowcoder.com/discuss', '牛客', '牛客面经'],
@@ -188,6 +241,9 @@ function scoreResult(item: CollectedSource, target: CollectTarget): number {
     score += 1;
   }
   if (NOISE_TERMS.some((t) => haystack.includes(t))) score -= 4;
+  if (/招聘|内推|宣讲/.test(haystack) && interviewHits.length === 0) score -= 8;
+  const year = String(recencyYear());
+  if (haystack.includes(year) && interviewHits.length) score += 2;
   return Math.round(score * 100) / 100;
 }
 
@@ -204,6 +260,7 @@ async function searchTavily(query: string, limit: number): Promise<CollectedSour
   };
   const site = query.match(/site:([^\s]+)/i);
   if (site) payload.include_domains = [site[1].replace(/\/$/, '')];
+  if (isRecencyQuery(query)) payload.start_date = `${recencyYear()}-01-01`;
   const res = await fetch('https://api.tavily.com/search', {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
@@ -224,7 +281,7 @@ async function searchTavily(query: string, limit: number): Promise<CollectedSour
         query,
         content: content.length >= 120 ? content.slice(0, 8000) : '',
         contentStatus: (content.length >= 120 ? 'fulltext' : 'snippet_only') as CollectedSource['contentStatus'],
-        publishedAt: row.published_date || row.published_at,
+        publishedAt: row.published_date || row.published_at || inferPublishedAt(row.title, row.content),
         relevanceScore: 0,
         searchProvider: 'tavily',
       };
@@ -241,7 +298,7 @@ async function searchBocha(query: string, limit: number): Promise<CollectedSourc
     query: searchQuery,
     summary: true,
     count: Math.min(limit, 20),
-    freshness: 'noLimit',
+    freshness: recencyFreshness(query),
   };
   if (domains.length) payload.include = domains.join('|');
   const res = await fetch('https://api.bochaai.com/v1/web-search', {
@@ -267,7 +324,7 @@ async function searchBocha(query: string, limit: number): Promise<CollectedSourc
         query,
         content: summary.length >= 120 ? summary.slice(0, 8000) : '',
         contentStatus: (summary.length >= 120 ? 'search_summary' : 'snippet_only') as CollectedSource['contentStatus'],
-        publishedAt: row.datePublished,
+        publishedAt: row.datePublished || inferPublishedAt(row.name, row.snippet || row.summary),
         relevanceScore: 0,
         searchProvider: 'bocha',
       };
@@ -335,7 +392,7 @@ async function fetchFulltext(item: CollectedSource): Promise<CollectedSource> {
 
 export async function collectInterviewIntel(target: CollectTarget): Promise<CollectReport> {
   const warnings: string[] = [];
-  const plans = generateQueryPlan(target, 6);
+  const plans = generateQueryPlan(target, 8);
   const hasTavily = Boolean(process.env.TAVILY_API_KEY);
   const hasBocha = Boolean(process.env.BOCHA_API_KEY);
   const providers: string[] = [];
@@ -347,9 +404,9 @@ export async function collectInterviewIntel(target: CollectTarget): Promise<Coll
   await Promise.all(
     plans.map(async (plan) => {
       const batches = await Promise.allSettled([
-        hasTavily ? searchTavily(plan.query, 4) : Promise.resolve([]),
-        hasBocha ? searchBocha(plan.query, 4) : Promise.resolve([]),
-        !hasTavily && !hasBocha ? searchBing(plan.query, 4) : Promise.resolve([]),
+        hasTavily ? searchTavily(plan.query, 8) : Promise.resolve([]),
+        hasBocha ? searchBocha(plan.query, 8) : Promise.resolve([]),
+        !hasTavily && !hasBocha ? searchBing(plan.query, 8) : Promise.resolve([]),
       ]);
       for (const batch of batches) {
         if (batch.status === 'fulfilled') raw.push(...batch.value);
@@ -373,21 +430,37 @@ export async function collectInterviewIntel(target: CollectTarget): Promise<Coll
     if (!old || item.relevanceScore > old.relevanceScore) dedup.set(key, item);
   }
 
-  const candidates = [...dedup.values()]
-    .filter((x) => x.relevanceScore >= 4)
-    .sort((a, b) => b.relevanceScore - a.relevanceScore);
+  const publishedTs = (iso?: string) => {
+    if (!iso) return 0;
+    const t = Date.parse(iso);
+    return Number.isNaN(t) ? 0 : t;
+  };
 
+  const candidates = [...dedup.values()]
+    .filter((x) => {
+      const hay = `${x.title} ${x.snippet} ${x.content}`;
+      const interviewLike = INTERVIEW_TERMS.some((t) => hay.includes(t));
+      return x.relevanceScore >= 4 && interviewLike;
+    })
+    .sort((a, b) => {
+      const da = publishedTs(a.publishedAt);
+      const db = publishedTs(b.publishedAt);
+      if (da !== db) return db - da;
+      return b.relevanceScore - a.relevanceScore;
+    });
+
+  const KEEP = 16;
   const ranked: CollectedSource[] = [];
   const seenPlatform = new Set<string>();
   for (const item of candidates) {
-    if (ranked.length >= 8) break;
+    if (ranked.length >= KEEP) break;
     if (!seenPlatform.has(item.platform)) {
       ranked.push(item);
       seenPlatform.add(item.platform);
     }
   }
   for (const item of candidates) {
-    if (ranked.length >= 8) break;
+    if (ranked.length >= KEEP) break;
     if (!ranked.includes(item)) ranked.push(item);
   }
 

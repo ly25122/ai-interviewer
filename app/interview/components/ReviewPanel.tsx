@@ -1,8 +1,14 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { WeekBars } from '@/app/components/ProgressViz';
+import { WeekTrend } from '@/app/components/ProgressViz';
+import {
+  formatArchiveTime,
+  getHistoryServerSnapshot,
+  getHistorySnapshot,
+  subscribeHistory,
+} from '@/lib/history';
 import { buildReviewArchive } from '@/lib/history';
 import { summarize } from '@/lib/progress';
 import type {
@@ -20,6 +26,47 @@ import {
   ReviewStats,
 } from './ReviewArchiveView';
 import { ResumeCoach } from './ResumeCoach';
+
+type ReviewTab = 'session' | 'history' | 'resume';
+
+function encourage(input: {
+  verified: number;
+  shaky: number;
+  streak: number;
+}): string {
+  if (input.streak > 1 && input.verified >= input.shaky) {
+    return `连续 ${input.streak} 天都有练。这几个点站住了，下次专攻剩下的就行。`;
+  }
+  if (input.shaky > input.verified) {
+    return '这轮被追回来几次不可惜，至少知道该补哪，比盲刷一套题强。';
+  }
+  if (input.verified > 0) {
+    return '这几个点撑住了。把漏洞补上，下一场会稳一点。';
+  }
+  return '先把这场回放看完。具体说到哪一层，比再找题更有用。';
+}
+
+function sessionComment(input: { verified: number; shaky: number; uncovered: number; avgScore: number }): {
+  comment: string;
+  rating: string;
+} {
+  if (input.avgScore >= 80) {
+    return {
+      rating: '这轮站得住',
+      comment: `均分 ${input.avgScore}。主线能讲清，剩下 ${input.shaky + input.uncovered} 个点下次盯着练就行。`,
+    };
+  }
+  if (input.avgScore >= 50) {
+    return {
+      rating: '一半撑住了',
+      comment: `站住 ${input.verified} 个，被追回来 ${input.shaky} 个。回放里看是哪一层没接上。`,
+    };
+  }
+  return {
+    rating: '这轮偏虚',
+    comment: `均分 ${input.avgScore}。先别加新题，把回放里崩掉的那几问补具体。`,
+  };
+}
 
 export function ReviewPanel({
   company,
@@ -54,6 +101,12 @@ export function ReviewPanel({
   onContinue: () => void;
   onTrainAgain: () => void;
 }) {
+  const [tab, setTab] = useState<ReviewTab>('session');
+  const archives = useSyncExternalStore(
+    subscribeHistory,
+    getHistorySnapshot,
+    getHistoryServerSnapshot,
+  );
   const archive = useMemo(
     () =>
       plan
@@ -79,89 +132,150 @@ export function ReviewPanel({
       return `· ${p.title}：${s.outcome === 'verified' ? '经得起追问' : `第 ${s.collapsedAtTurn} 轮经不起追问`}`;
     })
     .join('\n');
+  const words = encourage({
+    verified: archive?.verified ?? 0,
+    shaky: archive?.shaky ?? 0,
+    streak: progressSummary.streak,
+  });
+  const evals = archive
+    ? sessionComment({
+        verified: archive.verified,
+        shaky: archive.shaky,
+        uncovered: archive.uncovered,
+        avgScore: archive.avgScore,
+      })
+    : null;
+
+  const tabs: Array<{ id: ReviewTab; label: string }> = [
+    { id: 'session', label: '本场复盘' },
+    { id: 'history', label: '历史面试' },
+    { id: 'resume', label: '简历诊断' },
+  ];
 
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-[280px_1fr]">
+    <div className="grid items-start gap-4 lg:grid-cols-[220px_1fr]">
       <aside className="space-y-3 lg:sticky lg:top-4">
-        {archive ? (
-          <ReviewHeadline archive={archive} live />
-        ) : (
-          <div>
-            <h1 className="font-brand text-2xl leading-tight">
-              {company} · {role}
-            </h1>
-            <p className="mt-1 text-xs text-[var(--muted)]">还没有可回看的追问。</p>
-          </div>
-        )}
-
-        {archive && <ReviewStats archive={archive} />}
-
-        <div className="flex flex-wrap gap-2">
-          {incomplete && (
+        <nav className="surface rounded-lg p-2">
+          {tabs.map((t) => (
             <button
+              key={t.id}
               type="button"
-              onClick={onContinue}
-              className="btn-primary rounded-md px-4 py-2 text-xs"
+              onClick={() => setTab(t.id)}
+              className={`block w-full rounded-md px-3 py-2 text-left text-sm ${
+                tab === t.id
+                  ? 'bg-[var(--ink)] text-[var(--paper)]'
+                  : 'text-[var(--muted)] hover:bg-black/5'
+              }`}
             >
-              继续未完成的题
+              {t.label}
             </button>
-          )}
-          <button
-            type="button"
-            onClick={onTrainAgain}
-            className="btn-primary rounded-md px-4 py-2 text-xs"
-          >
-            再练一轮
-          </button>
-          <button type="button" onClick={onRestart} className="btn-ghost rounded-md px-4 py-2 text-xs">
-            换一个目标岗位
-          </button>
-        </div>
+          ))}
+        </nav>
 
-        {demo ? (
-          <p className="text-[11px] leading-relaxed text-[var(--muted)]">
-            演示模式不写入本机历史。用自己的材料练完一场，往期复盘才会留下问答原文。
-          </p>
-        ) : archive ? (
-          <p className="text-[11px] leading-relaxed text-[var(--muted)]">
-            这场复盘已收入本机，不上传服务器。
-            <Link href="/history" className="ml-1 text-[var(--accent)] hover:underline">
-              查看往期 →
+        {tab === 'history' ? (
+          <div className="space-y-2">
+            {archives.length === 0 ? (
+              <p className="text-xs leading-relaxed text-[var(--muted)]">
+                {demo
+                  ? '演示不写入历史。用自己的材料练完一场才会留下。'
+                  : '还没有往期记录。'}
+              </p>
+            ) : (
+              archives.slice(0, 6).map((a) => (
+                <Link
+                  key={a.id}
+                  href={`/history?id=${encodeURIComponent(a.id)}`}
+                  className="block rounded-lg border border-[var(--line)] px-3 py-2 hover:border-black/25"
+                >
+                  <p className="text-[11px] text-[var(--muted)]">{formatArchiveTime(a.at)}</p>
+                  <p className="mt-0.5 truncate text-xs font-medium">
+                    {a.company} · {a.role}
+                  </p>
+                </Link>
+              ))
+            )}
+            <Link href="/history" className="block text-xs text-[var(--accent)] hover:underline">
+              全部往期 →
             </Link>
-          </p>
-        ) : null}
+          </div>
+        ) : (
+          <>
+            {archive && <ReviewHeadline archive={archive} live />}
+            {archive && <ReviewStats archive={archive} />}
+            <div className="flex flex-wrap gap-2">
+              {incomplete && (
+                <button
+                  type="button"
+                  onClick={onContinue}
+                  className="btn-primary rounded-md px-4 py-2 text-xs"
+                >
+                  继续未完成的题
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onTrainAgain}
+                className="btn-primary rounded-md px-4 py-2 text-xs"
+              >
+                再练一轮
+              </button>
+              <button
+                type="button"
+                onClick={onRestart}
+                className="btn-ghost rounded-md px-4 py-2 text-xs"
+              >
+                换一个目标岗位
+              </button>
+            </div>
+          </>
+        )}
       </aside>
 
       <section className="space-y-4">
-        {archive && (
+        {tab === 'session' && (
           <>
-            <NextThreeCard archive={archive} live />
-            <PointReplayList key={archive.fingerprint} archive={archive} />
+            <div className="surface rounded-lg p-4">
+              <WeekTrend days={progressSummary.week} />
+              <p className="mt-3 text-sm leading-relaxed">{words}</p>
+            </div>
+            {evals && archive && (
+              <div className="surface rounded-lg p-4">
+                <p className="text-[11px] text-[var(--muted)]">本场评价</p>
+                <p className="mt-1 font-brand text-xl">{evals.rating}</p>
+                <p className="mt-2 text-sm leading-relaxed">{evals.comment}</p>
+                <p className="mt-3 text-[11px] text-[var(--muted)]">本场评语</p>
+                <p className="mt-1 text-sm leading-relaxed text-[var(--muted)]">
+                  {archive.verified} 个站住，{archive.shaky} 个被追回来
+                  {archive.uncovered > 0 ? `，${archive.uncovered} 个还没问到` : ''}
+                  。均分 {archive.avgScore}。
+                </p>
+              </div>
+            )}
+            {archive && (
+              <>
+                <NextThreeCard archive={archive} live />
+                <PointReplayList key={archive.fingerprint} archive={archive} />
+              </>
+            )}
           </>
         )}
 
-        <div className="surface rounded-lg p-4">
-          <div className="flex items-baseline justify-between gap-2">
-            <p className="text-sm font-medium">近 7 天</p>
-            <p className="text-xs text-[var(--muted)]">
-              {progressSummary.streak > 0
-                ? `已连续练习 ${progressSummary.streak} 天`
-                : '练过的日子会亮起来'}
-            </p>
+        {tab === 'history' && (
+          <div className="surface rounded-lg p-5 text-sm leading-relaxed text-[var(--muted)]">
+            左边点一场，会跳到往期复盘页看完整问答。记录只留在这台设备上。
           </div>
-          <div className="mt-3">
-            <WeekBars days={progressSummary.week} />
-          </div>
-        </div>
+        )}
 
-        <ResumeCoach
-          resume={resume}
-          jd={jd}
-          intel={intel}
-          demo={demo}
-          debrief={debrief}
-          onApply={onApplyResume}
-        />
+        {tab === 'resume' && (
+          <ResumeCoach
+            resume={resume}
+            jd={jd}
+            intel={intel}
+            demo={demo}
+            debrief={debrief}
+            onApply={onApplyResume}
+          />
+        )}
       </section>
     </div>
   );

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { analyzePost } from '@/lib/engine/analyzePost';
 import { buildSyllabus, type AnalyzedPost } from '@/lib/engine/buildSyllabus';
+import { augmentSyllabus, emptySyllabus, shouldAugmentProfile } from '@/lib/engine/inferProfile';
 import { LLMError } from '@/lib/llm';
 import type { AnalyzeInput } from '@/lib/types';
 
@@ -16,6 +17,8 @@ interface SyllabusRequest {
   posts: AnalyzeInput[];
   company?: string;
   role?: string;
+  jd?: string;
+  resume?: string;
 }
 
 async function mapWithConcurrency<T, R>(
@@ -46,8 +49,10 @@ export async function POST(request: Request) {
   }
 
   const posts = (body?.posts ?? []).filter((p) => p?.content?.trim());
-  if (posts.length === 0) {
-    return NextResponse.json({ error: '至少需要一篇面经' }, { status: 400 });
+  const jd = body?.jd?.trim() ?? '';
+  const resume = body?.resume?.trim() ?? '';
+  if (posts.length === 0 && jd.length < 40 && resume.length < 80) {
+    return NextResponse.json({ error: '至少需要一篇面经，或提供较完整的 JD 与简历' }, { status: 400 });
   }
   if (posts.length > MAX_POSTS) {
     return NextResponse.json(
@@ -69,14 +74,23 @@ export async function POST(request: Request) {
     });
 
     const analyzed = settled.filter((x): x is AnalyzedPost => x !== null);
-    if (analyzed.length === 0) {
+    if (posts.length > 0 && analyzed.length === 0 && jd.length < 40 && resume.length < 80) {
       return NextResponse.json({ error: '所有面经分析均失败' }, { status: 502 });
     }
 
-    const syllabus = await buildSyllabus(analyzed, {
+    const meta = {
       company: body.company?.trim() || inferField(analyzed, 'company') || '未指定公司',
       role: body.role?.trim() || inferField(analyzed, 'role') || '未指定岗位',
-    });
+    };
+    let syllabus =
+      analyzed.length > 0 ? await buildSyllabus(analyzed, meta) : emptySyllabus(meta);
+    if (shouldAugmentProfile(posts.length, syllabus.topics.length)) {
+      syllabus = await augmentSyllabus(syllabus, {
+        jd,
+        resume,
+        intelSnippets: posts.map((p) => `${p.title ?? ''}\n${p.content}`),
+      });
+    }
 
     return NextResponse.json({
       syllabus,

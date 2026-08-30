@@ -4,6 +4,7 @@ import type {
   AttackSource,
   InterviewPlan,
   IntelligenceItem,
+  PracticeDifficulty,
   ReferenceAnswer,
   TrainingMode,
 } from '../types';
@@ -12,7 +13,7 @@ import { MAX_PROBE_TURNS } from './probe';
 const PLAN_SYSTEM = `你是一名大厂技术实习招聘的面试官。你会拿到三份材料：候选人**简历**、目标岗位 **JD**，以及一批**面试情报**（该岗位/该组真实考过、强调过的东西，可能来自师兄经验、公开面经、招聘信息）。
 
 你的任务不是写鼓励语，而是制定一份**可深挖、且贴近这个岗位真实考法**的面试提纲：
-找出 4 到 6 个最值得追问的点，按优先级排序。
+找出 4 到 8 个最值得追问的点，按优先级排序。题量以用户指定为准。
 
 四类追问点（source）必须严格区分：
 - intel_hit：情报里明确出现、这个岗位/组真实考过或反复强调的点——优先级最高，因为这是"内部消息"。哪怕简历没写，也要问，看候选人有没有准备
@@ -142,22 +143,36 @@ export async function planResumeInterview(
   resume: string,
   jd: string,
   intelligence?: IntelligenceItem[],
-  trainingMode: TrainingMode = 'full',
+  opts: {
+    trainingMode?: TrainingMode;
+    questionCount?: number;
+    difficulty?: PracticeDifficulty;
+  } = {},
 ): Promise<InterviewPlan> {
+  const trainingMode = opts.trainingMode ?? 'full';
+  const questionCount = opts.questionCount ?? 6;
+  const difficulty = opts.difficulty ?? 'medium';
   const resumeText = clip(resume, 12000);
   const jdText = clip(jd, 8000);
   const intel = buildIntel(intelligence);
+  const diffHint =
+    difficulty === 'easy'
+      ? '\n\n【难度】稳妥：先问机制和做过的部分，少追极端失败路径。'
+      : difficulty === 'hard'
+        ? '\n\n【难度】加压：多追失败路径、边界和口径，允许连续下潜。'
+        : '\n\n【难度】常规：机制问清后再追一层边界。';
   const modeHint =
     trainingMode === 'intel'
       ? '\n\n【训练模式】情报针对训练：优先且尽量只出 intel_hit。简历与 JD 只作上下文，不要把主战场放在简历数字或 JD 缺口上。'
       : '';
+  const countHint = `\n\n【题量】请给出 ${questionCount} 个追问点，不要多也不要少。`;
 
   const raw = await chat({
     messages: [
       { role: 'system', content: PLAN_SYSTEM },
       {
         role: 'user',
-        content: `【简历】\n${resumeText}\n\n【岗位 JD】\n${jdText}\n\n【面试情报】\n${intel.prompt}${modeHint}`,
+        content: `【简历】\n${resumeText}\n\n【岗位 JD】\n${jdText}\n\n【面试情报】\n${intel.prompt}${modeHint}${diffHint}${countHint}`,
       },
     ],
     temperature: 0.2,
@@ -168,7 +183,7 @@ export async function planResumeInterview(
   const parsed = parseJson<RawPlan>(raw);
   const points: AttackPoint[] = (parsed.points ?? [])
     .filter((p) => p?.title?.trim())
-    .slice(0, 6)
+    .slice(0, questionCount)
     .map((p, i) => {
       const source = SOURCES.includes(p.source as AttackSource)
         ? (p.source as AttackSource)
@@ -192,7 +207,7 @@ export async function planResumeInterview(
     trainingMode === 'intel'
       ? [...points.filter((p) => p.source === 'intel_hit'), ...points.filter((p) => p.source !== 'intel_hit')].slice(
           0,
-          6,
+          questionCount,
         )
       : points;
 
