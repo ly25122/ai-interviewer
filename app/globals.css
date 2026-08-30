@@ -1,11 +1,154 @@
 @import "tailwindcss";
 
 /*
-  固定浅色主题。深色模式在 demo 录制时会带来不可控的呈现差异，
-  且证据卡的红黄绿语义在两套配色下需要分别调校，16 小时内不值得。
+  AI面试官视觉：面试室灯光感。
+  深墨绿底 + 冷石纸面，强调「认真备考」而不是 SaaS 仪表盘。
+  刻意避开紫渐变、奶油陶土、报章细线这三种 AI 默认审美。
 */
+
+:root {
+  --ink: #0f1714;
+  --ink-soft: #1a2621;
+  --paper: #e7ebe8;
+  --paper-lift: #f2f5f2;
+  --line: rgba(15, 23, 20, 0.12);
+  --muted: #5c6b64;
+  --accent: #1f7a66;
+  --accent-deep: #145a4b;
+  --warn: #a16207;
+  --danger: #9f2d3a;
+  --ok: #1f6b4a;
+  --brand: "Noto Serif SC", "Songti SC", "STSong", serif;
+  --body: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    sans-serif;
+}
+
+@theme inline {
+  --font-brand: var(--brand);
+  --font-sans: var(--body);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-paper: var(--paper);
+  --color-paper-lift: var(--paper-lift);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-deep: var(--accent-deep);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  font-family:
-    -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
-    "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--body);
+  background: var(--paper);
+  color: var(--ink);
+  letter-spacing: 0.01em;
+}
+
+.font-brand {
+  font-family: var(--brand);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* 面试室背景：斜向光 + 细网格，给第一屏气氛，不抢文字 */
+.room-bg {
+  background:
+    radial-gradient(1200px 700px at 18% 12%, rgba(31, 122, 102, 0.28), transparent 55%),
+    radial-gradient(900px 600px at 88% 8%, rgba(255, 220, 170, 0.12), transparent 50%),
+    linear-gradient(160deg, #0c1411 0%, #15201b 48%, #0f1714 100%);
+}
+
+.room-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse at center, black 35%, transparent 78%);
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes lamp-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.anim-rise {
+  animation: rise-in 0.7s ease-out both;
+}
+
+.anim-rise-delay {
+  animation: rise-in 0.8s ease-out 0.12s both;
+}
+
+.anim-rise-late {
+  animation: rise-in 0.85s ease-out 0.28s both;
+}
+
+.lamp-glow {
+  animation: lamp-breathe 5.5s ease-in-out infinite;
+}
+
+.surface {
+  background: var(--paper-lift);
+  border: 1px solid var(--line);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #f4faf7;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-deep);
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  border-color: rgba(15, 23, 20, 0.28);
+  background: rgba(15, 23, 20, 0.03);
+}
+
+.field {
+  border: 1px solid var(--line);
+  background: #fff;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.field:focus {
+  border-color: rgba(31, 122, 102, 0.55);
+  box-shadow: 0 0 0 3px rgba(31, 122, 102, 0.12);
 }

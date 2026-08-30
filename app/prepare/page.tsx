@@ -24,34 +24,42 @@ import type {
 
 type Step = 'input' | 'rating' | 'map';
 
-/**
- * 一份预先跑好的完整状态，由 scripts/gen-demo-state.mjs 真实调用引擎生成。
- * 演示时完整走一遍需要等模型十几秒、手点十几次自评、再做几轮追问，时长撑不住，
- * 因此提供一个直接看结果的入口。数据本身没有一处是手写死的。
- */
 const DEMO_STATE = demoState as unknown as LocalState;
 
 const STATUS_META: Record<TopicStatus, { label: string; cell: string; legend: string }> = {
-  verified: { label: '实测确认', cell: 'bg-emerald-600 text-white', legend: 'bg-emerald-600' },
+  verified: { label: '实测确认', cell: 'bg-[var(--ok)] text-white', legend: 'bg-[var(--ok)]' },
   claimed: {
     label: '自评会，未验证',
-    cell: 'bg-emerald-100 text-emerald-800',
-    legend: 'bg-emerald-100',
+    cell: 'bg-[rgba(31,107,74,0.14)] text-[var(--ok)]',
+    legend: 'bg-[rgba(31,107,74,0.35)]',
   },
-  shaky: { label: '不稳', cell: 'bg-amber-300 text-amber-900', legend: 'bg-amber-300' },
-  gap: { label: '不会', cell: 'bg-rose-500 text-white', legend: 'bg-rose-500' },
-  unrated: { label: '未评估', cell: 'bg-slate-100 text-slate-500', legend: 'bg-slate-100' },
+  shaky: {
+    label: '不稳',
+    cell: 'bg-[rgba(161,98,7,0.18)] text-[var(--warn)]',
+    legend: 'bg-[var(--warn)]',
+  },
+  gap: { label: '不会', cell: 'bg-[var(--danger)] text-white', legend: 'bg-[var(--danger)]' },
+  unrated: {
+    label: '未评估',
+    cell: 'bg-black/5 text-[var(--muted)]',
+    legend: 'bg-black/20',
+  },
 };
 
-const RATING_OPTIONS: Array<{ value: SelfRating; label: string; tone: string }> = [
-  { value: 'confident', label: '会', tone: 'hover:border-emerald-400 hover:bg-emerald-50' },
-  { value: 'unsure', label: '模糊', tone: 'hover:border-amber-400 hover:bg-amber-50' },
-  { value: 'unknown', label: '不会', tone: 'hover:border-rose-400 hover:bg-rose-50' },
+const RATING_OPTIONS: Array<{ value: SelfRating; label: string; active: string }> = [
+  { value: 'confident', label: '会', active: 'border-[var(--ok)] bg-[var(--ok)] text-white' },
+  { value: 'unsure', label: '模糊', active: 'border-[var(--warn)] bg-[var(--warn)] text-white' },
+  { value: 'unknown', label: '不会', active: 'border-[var(--danger)] bg-[var(--danger)] text-white' },
 ];
+
+const STEP_LABEL: Record<Step, string> = {
+  input: '建考纲',
+  rating: '自评',
+  map: '追问验证',
+};
 
 export default function PreparePage() {
   const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  /** null 表示跟随数据自动推导，用户手动切换后才固定 */
   const [pinnedStep, setPinnedStep] = useState<Step | null>(null);
 
   const step: Step =
@@ -66,70 +74,76 @@ export default function PreparePage() {
   const setStep = setPinnedStep;
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-5 py-8">
-      <header className="mb-6 flex flex-wrap items-baseline justify-between gap-3">
-        <div className="flex items-baseline gap-3">
-          <Link href="/" className="text-2xl font-semibold tracking-tight">
-            底气
-          </Link>
-          <p className="text-sm text-slate-500">让你知道自己准备到哪了</p>
+    <main className="min-h-dvh bg-[var(--paper)] text-[var(--ink)]">
+      <header className="border-b border-[var(--line)] bg-[var(--paper-lift)]/85 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3 px-5 py-4">
+          <div className="flex items-baseline gap-3">
+            <Link href="/" className="font-brand text-xl tracking-tight">
+              AI面试官
+            </Link>
+            <p className="hidden text-sm text-[var(--muted)] sm:block">用真实面经练到会</p>
+          </div>
+          <nav className="flex gap-1 text-xs">
+            {(['input', 'rating', 'map'] as Step[]).map((s, i) => (
+              <button
+                key={s}
+                type="button"
+                disabled={s !== 'input' && !state.syllabus}
+                onClick={() => setStep(s)}
+                className={`rounded-md px-3 py-1.5 transition disabled:cursor-not-allowed disabled:opacity-30 ${
+                  step === s
+                    ? 'bg-[var(--ink)] text-[var(--paper)]'
+                    : 'text-[var(--muted)] hover:bg-black/5 hover:text-[var(--ink)]'
+                }`}
+              >
+                {i + 1}. {STEP_LABEL[s]}
+              </button>
+            ))}
+          </nav>
         </div>
-        <nav className="flex gap-1 text-xs">
-          {(['input', 'rating', 'map'] as Step[]).map((s, i) => (
-            <button
-              key={s}
-              type="button"
-              disabled={s !== 'input' && !state.syllabus}
-              onClick={() => setStep(s)}
-              className={`rounded-full px-3 py-1 transition disabled:cursor-not-allowed disabled:text-slate-300 ${
-                step === s ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {i + 1}. {{ input: '建考纲', rating: '自评', map: '准备度' }[s]}
-            </button>
-          ))}
-        </nav>
       </header>
 
-      {step === 'input' && (
-        <InputStep
-          onDone={(syllabus) => {
-            setLocalState(() => ({ syllabus, ratings: {}, probes: {} }));
-            setStep('rating');
-          }}
-          onLoadDemo={() => {
-            setLocalState(() => DEMO_STATE);
-            setStep('map');
-          }}
-        />
-      )}
+      <div className="mx-auto w-full max-w-5xl px-5 py-8">
+        {step === 'input' && (
+          <InputStep
+            onDone={(syllabus) => {
+              setLocalState(() => ({ syllabus, ratings: {}, probes: {} }));
+              setStep('rating');
+            }}
+            onLoadDemo={() => {
+              setLocalState(() => DEMO_STATE);
+              setStep('map');
+            }}
+          />
+        )}
 
-      {step === 'rating' && state.syllabus && (
-        <RatingStep
-          syllabus={state.syllabus}
-          ratings={state.ratings}
-          onRate={(topicId, rating) =>
-            setLocalState((prev) => ({
-              ...prev,
-              ratings: { ...prev.ratings, [topicId]: rating },
-            }))
-          }
-          onDone={() => setStep('map')}
-        />
-      )}
+        {step === 'rating' && state.syllabus && (
+          <RatingStep
+            syllabus={state.syllabus}
+            ratings={state.ratings}
+            onRate={(topicId, rating) =>
+              setLocalState((prev) => ({
+                ...prev,
+                ratings: { ...prev.ratings, [topicId]: rating },
+              }))
+            }
+            onDone={() => setStep('map')}
+          />
+        )}
 
-      {step === 'map' && map && state.syllabus && (
-        <MapStep
-          syllabus={state.syllabus}
-          map={map}
-          onProbeFinish={(session) =>
-            setLocalState((prev) => ({
-              ...prev,
-              probes: { ...prev.probes, [session.topicId]: session },
-            }))
-          }
-        />
-      )}
+        {step === 'map' && map && state.syllabus && (
+          <MapStep
+            syllabus={state.syllabus}
+            map={map}
+            onProbeFinish={(session) =>
+              setLocalState((prev) => ({
+                ...prev,
+                probes: { ...prev.probes, [session.topicId]: session },
+              }))
+            }
+          />
+        )}
+      </div>
     </main>
   );
 }
@@ -144,7 +158,6 @@ function InputStep({
   const [posts, setPosts] = useState<string[]>(['', '']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
   const filled = posts.filter((p) => p.trim()).length;
 
   async function submit() {
@@ -172,27 +185,27 @@ function InputStep({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold">第一步：把面经变成考纲</h2>
-        <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
-          粘贴几篇同一岗位的面经。系统会先判断每篇能不能信，再把题目按考点归并，
-          按可信度加权排序——一篇高可信真面经的分量，高于五篇广告帖。
+    <div className="space-y-6">
+      <div className="max-w-2xl">
+        <p className="text-xs tracking-[0.2em] text-[var(--accent)]">STEP 01</p>
+        <h1 className="font-brand mt-2 text-3xl leading-tight sm:text-4xl">先把面经变成考纲</h1>
+        <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] sm:text-base">
+          粘贴同一岗位的几篇面经。AI 面试官会先甄别可信度，再按考点归并——一篇高可信真面经的分量，高于五篇广告帖。
         </p>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-5 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setPosts(SAMPLES.map((s) => `${s.title}\n\n${s.content}`))}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-700 transition hover:border-slate-400"
+            className="btn-ghost rounded-md px-3 py-1.5 text-xs"
           >
             用三篇示例快速体验
           </button>
           <button
             type="button"
             onClick={onLoadDemo}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-500 transition hover:border-slate-400"
+            className="btn-ghost rounded-md px-3 py-1.5 text-xs text-[var(--muted)]"
           >
-            或直接查看一份已完成的地图
+            直接查看一份已完成的地图
           </button>
         </div>
       </div>
@@ -205,13 +218,13 @@ function InputStep({
               setPosts((prev) => prev.map((p, j) => (j === i ? e.target.value : p)))
             }
             placeholder={`第 ${i + 1} 篇面经正文`}
-            className="h-36 w-full resize-none rounded-xl border border-slate-300 bg-white p-3 text-sm leading-relaxed outline-none focus:border-slate-500"
+            className="field h-36 w-full resize-none rounded-lg p-3.5 text-sm leading-relaxed"
           />
           {posts.length > 1 && (
             <button
               type="button"
               onClick={() => setPosts((prev) => prev.filter((_, j) => j !== i))}
-              className="absolute right-3 top-3 text-xs text-slate-400 hover:text-slate-700"
+              className="absolute right-3 top-3 text-xs text-[var(--muted)] hover:text-[var(--ink)]"
             >
               移除
             </button>
@@ -224,7 +237,7 @@ function InputStep({
           type="button"
           onClick={() => setPosts((prev) => [...prev, ''])}
           disabled={posts.length >= 8}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 transition hover:border-slate-400 disabled:cursor-not-allowed disabled:text-slate-300"
+          className="btn-ghost rounded-md px-3 py-2 text-sm disabled:opacity-30"
         >
           再加一篇
         </button>
@@ -232,14 +245,14 @@ function InputStep({
           type="button"
           onClick={submit}
           disabled={loading || filled === 0}
-          className="rounded-lg bg-slate-900 px-5 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:bg-slate-300"
+          className="btn-primary rounded-md px-5 py-2 text-sm font-medium"
         >
           {loading ? `正在分析 ${filled} 篇，约 1 分钟` : `用这 ${filled} 篇生成考纲`}
         </button>
       </div>
 
       {error && (
-        <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <p className="rounded-md border border-[rgba(159,45,58,0.25)] bg-[rgba(159,45,58,0.08)] px-3 py-2 text-sm text-[var(--danger)]">
           {error}
         </p>
       )}
@@ -261,22 +274,22 @@ function RatingStep({
   const rated = syllabus.topics.filter((t) => ratings[t.id]).length;
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold">
-          第二步：三分钟过一遍，这个岗位共 {syllabus.topics.length} 个考点
-        </h2>
-        <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
-          基于 {syllabus.postCount} 篇面经聚合而来。不用写字，只需要判断会、模糊、还是不会。
-          考点范围是有限的，这件事本身就能让人踏实一些。
+    <div className="space-y-6">
+      <div className="max-w-2xl">
+        <p className="text-xs tracking-[0.2em] text-[var(--accent)]">STEP 02</p>
+        <h1 className="font-brand mt-2 text-3xl leading-tight sm:text-4xl">
+          这个岗位共 {syllabus.topics.length} 个考点
+        </h1>
+        <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
+          基于 {syllabus.postCount} 篇面经。不用写字，只标会、模糊、不会。范围有限，这件事本身就能让人踏实一些。
         </p>
-        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100">
+        <div className="mt-4 h-1 overflow-hidden rounded-full bg-black/5">
           <div
-            className="h-full rounded-full bg-slate-900 transition-all"
+            className="h-full rounded-full bg-[var(--accent)] transition-all"
             style={{ width: `${(rated / Math.max(syllabus.topics.length, 1)) * 100}%` }}
           />
         </div>
-        <p className="mt-1.5 text-xs text-slate-400">
+        <p className="mt-2 text-xs text-[var(--muted)]">
           已评 {rated} / {syllabus.topics.length}
         </p>
       </div>
@@ -285,11 +298,11 @@ function RatingStep({
         {syllabus.topics.map((topic) => (
           <li
             key={topic.id}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3"
+            className="surface flex flex-wrap items-center justify-between gap-3 rounded-lg px-4 py-3"
           >
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium">{topic.title}</p>
-              <p className="mt-0.5 text-xs text-slate-400">
+              <p className="mt-0.5 text-xs text-[var(--muted)]">
                 {topic.category} · 在 {new Set(topic.sources.map((s) => s.postId)).size} 篇面经中出现
               </p>
             </div>
@@ -299,10 +312,10 @@ function RatingStep({
                   key={opt.value}
                   type="button"
                   onClick={() => onRate(topic.id, opt.value)}
-                  className={`rounded-lg border px-3 py-1.5 text-xs transition ${
+                  className={`rounded-md border px-3 py-1.5 text-xs transition ${
                     ratings[topic.id] === opt.value
-                      ? 'border-slate-900 bg-slate-900 text-white'
-                      : `border-slate-300 bg-white text-slate-600 ${opt.tone}`
+                      ? opt.active
+                      : 'border-[var(--line)] bg-white text-[var(--muted)] hover:border-black/25'
                   }`}
                 >
                   {opt.label}
@@ -317,9 +330,9 @@ function RatingStep({
         type="button"
         onClick={onDone}
         disabled={rated === 0}
-        className="rounded-lg bg-slate-900 px-5 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:bg-slate-300"
+        className="btn-primary rounded-md px-5 py-2 text-sm font-medium"
       >
-        看我的准备度
+        进入追问验证
       </button>
     </div>
   );
@@ -336,7 +349,6 @@ function MapStep({
 }) {
   const [probingTopic, setProbingTopic] = useState<SyllabusTopic | null>(null);
 
-  /** 只验证「自评说会」的考点。说不会的没什么可验证的，说模糊的用户自己已经知道了 */
   const claimed = syllabus.topics.filter(
     (t) => map.cells.find((c) => c.topicId === t.id)?.status === 'claimed',
   );
@@ -354,15 +366,23 @@ function MapStep({
   const selfConfident = map.cells.filter((c) => c.selfRating === 'confident').length;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
+      <div className="max-w-2xl">
+        <p className="text-xs tracking-[0.2em] text-[var(--accent)]">STEP 03</p>
+        <h1 className="font-brand mt-2 text-3xl leading-tight sm:text-4xl">准备度与追问</h1>
+        <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
+          自评会不等于真的会。AI 面试官最多追问两轮，只看你能不能持续给出新的具体事实。
+        </p>
+      </div>
+
       {map.gapCount > 0 && (
-        <div className="rounded-xl border border-amber-300 bg-amber-50 p-5">
-          <p className="text-lg font-semibold leading-relaxed text-amber-900">
+        <div className="rounded-lg border border-[rgba(161,98,7,0.3)] bg-[rgba(161,98,7,0.08)] p-5">
+          <p className="font-brand text-xl leading-relaxed text-[var(--warn)]">
             你以为自己会的 {selfConfident} 个考点里，有 {map.gapCount} 个经不起追问。
           </p>
-          <p className="mt-1.5 text-sm leading-relaxed text-amber-800">
+          <p className="mt-2 text-sm leading-relaxed text-[var(--warn)]/90">
             这不是坏消息。真正让人焦虑的从来不是知道自己不会，
-            而是隐隐怀疑「我以为我会的东西可能其实不会」。现在它变成了一份具体的清单。
+            而是隐隐怀疑「我以为我会的东西可能其实不会」。现在它变成了一份具体清单。
           </p>
         </div>
       )}
@@ -371,21 +391,21 @@ function MapStep({
         <Stat label="考点总数" value={map.total} hint={`来自 ${syllabus.postCount} 篇面经`} />
         <Stat label="已覆盖" value={map.covered} hint="自评会或实测确认" />
         <Stat
-          label="自评与实测的落差"
+          label="自评与实测落差"
           value={map.gapCount}
           hint={map.gapCount > 0 ? '你以为会、但答不出新东西' : '尚未做追问验证'}
           emphasize={map.gapCount > 0}
         />
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="surface rounded-lg p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold">
+          <h2 className="font-brand text-lg">
             {syllabus.company} · {syllabus.role} 准备度地图
           </h2>
           <div className="flex flex-wrap gap-2.5">
             {Object.entries(STATUS_META).map(([key, meta]) => (
-              <span key={key} className="flex items-center gap-1.5 text-[11px] text-slate-500">
+              <span key={key} className="flex items-center gap-1.5 text-[11px] text-[var(--muted)]">
                 <span className={`h-2.5 w-2.5 rounded-sm ${meta.legend}`} />
                 {meta.label}
               </span>
@@ -396,7 +416,7 @@ function MapStep({
         <div className="space-y-2.5">
           {byCategory.map(([category, cells]) => (
             <div key={category} className="flex gap-3">
-              <span className="w-16 shrink-0 pt-2 text-right text-xs text-slate-400">
+              <span className="w-16 shrink-0 pt-2 text-right text-xs text-[var(--muted)]">
                 {category}
               </span>
               <div className="flex flex-wrap gap-1.5">
@@ -416,11 +436,10 @@ function MapStep({
       </div>
 
       {claimed.length > 0 && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-semibold">验证一下你说会的考点</h2>
-          <p className="mt-1 text-xs leading-relaxed text-slate-400">
-            自评会不等于真的会。每个考点最多追问三轮，只看你能不能持续给出新的具体事实，
-            不评价你答得好不好。
+        <div className="surface rounded-lg p-5">
+          <h2 className="font-brand text-lg">让 AI 面试官追问你说会的考点</h2>
+          <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
+            每个考点最多两轮。不评价答得好不好，只看有没有新增可验证事实。
           </p>
           {probingTopic ? (
             <ProbeDialog
@@ -432,19 +451,19 @@ function MapStep({
               }}
             />
           ) : (
-            <ul className="mt-3 space-y-1.5">
+            <ul className="mt-4 space-y-1.5">
               {claimed.map((topic) => (
                 <li
                   key={topic.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2"
+                  className="flex items-center justify-between gap-3 rounded-md border border-[var(--line)] bg-white px-3 py-2.5"
                 >
                   <span className="min-w-0 flex-1 truncate text-sm">{topic.title}</span>
                   <button
                     type="button"
                     onClick={() => setProbingTopic(topic)}
-                    className="shrink-0 rounded-md border border-slate-300 px-2.5 py-1 text-xs text-slate-700 transition hover:border-slate-500"
+                    className="btn-primary shrink-0 rounded-md px-3 py-1 text-xs"
                   >
-                    验证
+                    开始追问
                   </button>
                 </li>
               ))}
@@ -454,20 +473,20 @@ function MapStep({
       )}
 
       {map.nextThree.length > 0 && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-semibold">接下来只做这三件事</h2>
-          <p className="mt-1 text-xs text-slate-400">
-            按考点权重乘以你的缺口排序。不给完整清单，长清单只会加重压力。
+        <div className="surface rounded-lg p-5">
+          <h2 className="font-brand text-lg">接下来只做这三件事</h2>
+          <p className="mt-1 text-xs text-[var(--muted)]">
+            按考点权重 × 缺口排序。不给长清单，长清单只会加重压力。
           </p>
-          <ol className="mt-3 space-y-2">
+          <ol className="mt-4 space-y-3">
             {map.nextThree.map((action, i) => (
               <li key={action.topicId} className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs text-white">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[var(--ink)] text-xs text-[var(--paper)]">
                   {i + 1}
                 </span>
                 <div>
                   <p className="text-sm font-medium">{action.title}</p>
-                  <p className="text-xs text-slate-500">{action.reason}</p>
+                  <p className="text-xs text-[var(--muted)]">{action.reason}</p>
                 </div>
               </li>
             ))}
@@ -565,23 +584,26 @@ function ProbeDialog({
   }
 
   return (
-    <div className="mt-3 rounded-lg border border-slate-300 bg-slate-50 p-3.5">
+    <div className="mt-4 rounded-lg border border-[var(--accent)]/30 bg-[rgba(31,122,102,0.05)] p-4">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-medium">{topic.title}</p>
+        <div>
+          <p className="text-xs tracking-[0.16em] text-[var(--accent)]">AI 面试官</p>
+          <p className="mt-1 text-sm font-medium">{topic.title}</p>
+        </div>
         <button
           type="button"
           onClick={onCancel}
-          className="shrink-0 text-xs text-slate-400 hover:text-slate-700"
+          className="shrink-0 text-xs text-[var(--muted)] hover:text-[var(--ink)]"
         >
           退出
         </button>
       </div>
 
       {turns.map((turn, i) => (
-        <div key={i} className="mt-3 space-y-1 border-l-2 border-slate-200 pl-3">
-          <p className="text-xs text-slate-500">面试官：{turn.question}</p>
-          <p className="text-xs text-slate-700">你：{turn.answer}</p>
-          <p className="text-[11px] text-emerald-600">{turn.judgement}</p>
+        <div key={i} className="mt-3 space-y-1 border-l-2 border-[var(--accent)]/35 pl-3">
+          <p className="text-xs text-[var(--muted)]">面试官：{turn.question}</p>
+          <p className="text-xs text-[var(--ink)]">你：{turn.answer}</p>
+          <p className="text-[11px] text-[var(--ok)]">{turn.judgement}</p>
         </div>
       ))}
 
@@ -589,38 +611,37 @@ function ProbeDialog({
         <button
           type="button"
           onClick={start}
-          className="mt-3 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white"
+          className="btn-primary mt-4 rounded-md px-4 py-2 text-sm font-medium"
         >
           开始追问
         </button>
       )}
 
       {question && (
-        <div className="mt-3 space-y-2">
-          <p className="text-sm">
-            <span className="text-slate-400">第 {turns.length + 1} 轮 · 面试官：</span>
+        <div className="mt-4 space-y-2">
+          <p className="text-sm leading-relaxed">
+            <span className="text-[var(--muted)]">第 {turns.length + 1} 轮 · 面试官：</span>
             {question}
           </p>
           <textarea
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             placeholder="说说看。想不起来就直说，这里不会有人评价你"
-            className="h-24 w-full resize-none rounded-lg border border-slate-300 bg-white p-2.5 text-sm outline-none focus:border-slate-500"
+            className="field h-24 w-full resize-none rounded-md p-2.5 text-sm"
           />
           <button
             type="button"
             onClick={submit}
             disabled={loading || !answer.trim()}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:bg-slate-300"
+            className="btn-primary rounded-md px-4 py-2 text-sm font-medium"
           >
             {loading ? '判定中' : '提交'}
           </button>
         </div>
       )}
 
-      {loading && !question && <p className="mt-3 text-xs text-slate-400">正在准备问题</p>}
-
-      {error && <p className="mt-2 text-xs text-rose-600">{error}</p>}
+      {loading && !question && <p className="mt-3 text-xs text-[var(--muted)]">正在准备问题</p>}
+      {error && <p className="mt-2 text-xs text-[var(--danger)]">{error}</p>}
     </div>
   );
 }
@@ -638,19 +659,21 @@ function Stat({
 }) {
   return (
     <div
-      className={`rounded-xl border p-5 shadow-sm ${
-        emphasize ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white'
+      className={`rounded-lg border p-5 ${
+        emphasize
+          ? 'border-[rgba(161,98,7,0.3)] bg-[rgba(161,98,7,0.08)]'
+          : 'surface'
       }`}
     >
-      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-xs text-[var(--muted)]">{label}</p>
       <p
-        className={`mt-1.5 text-4xl font-semibold tabular-nums ${
-          emphasize ? 'text-amber-700' : ''
+        className={`font-brand mt-1.5 text-4xl tabular-nums ${
+          emphasize ? 'text-[var(--warn)]' : ''
         }`}
       >
         {value}
       </p>
-      <p className="mt-1.5 text-xs leading-relaxed text-slate-400">{hint}</p>
+      <p className="mt-1.5 text-xs leading-relaxed text-[var(--muted)]">{hint}</p>
     </div>
   );
 }
