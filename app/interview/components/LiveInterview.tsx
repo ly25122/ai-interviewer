@@ -11,6 +11,7 @@ import type {
   ReferenceAnswer as ReferenceAnswerData,
   ResumeInterviewSession,
 } from '@/lib/types';
+import { TurnReplay } from './TurnReplay';
 import { ResumeSheet, SOURCE_META } from './shared';
 
 function ReferenceAnswerBlock({
@@ -260,16 +261,11 @@ export function LivePhase({
               {scoreSession(sessions[point.id])} 分
               （{scoreLabel(scoreSession(sessions[point.id])).text}）
             </p>
-            <div className="mt-4 space-y-3">
-              {sessions[point.id].turns.map((t, i) => (
-                <div key={i} className="border-l-2 border-[var(--line)] pl-3">
-                  <p className="text-xs text-[var(--muted)]">面试官：{t.question}</p>
-                  <p className="mt-1 text-xs">你：{t.answer}</p>
-                  {t.judgement && (
-                    <p className="mt-1 text-[11px] text-[var(--ok)]">{t.judgement}</p>
-                  )}
-                </div>
-              ))}
+            <div className="mt-4">
+              <TurnReplay
+                turns={sessions[point.id].turns}
+                collapsedAtTurn={sessions[point.id].collapsedAtTurn}
+              />
             </div>
             <ReferenceAnswerBlock
               key={point.id}

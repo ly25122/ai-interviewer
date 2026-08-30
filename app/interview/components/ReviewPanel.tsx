@@ -1,6 +1,9 @@
 'use client';
 
-import { CoverageRing, StackedMeter, WeekBars } from '@/app/components/ProgressViz';
+import { useMemo } from 'react';
+import Link from 'next/link';
+import { WeekBars } from '@/app/components/ProgressViz';
+import { buildReviewArchive } from '@/lib/history';
 import { summarize } from '@/lib/progress';
 import type {
   IntelligenceItem,
@@ -8,12 +11,20 @@ import type {
   PracticeRecord,
   ReadinessMap,
   ResumeInterviewSession,
+  TrainingMode,
 } from '@/lib/types';
+import {
+  NextThreeCard,
+  PointReplayList,
+  ReviewHeadline,
+  ReviewStats,
+} from './ReviewArchiveView';
 import { ResumeCoach } from './ResumeCoach';
 
 export function ReviewPanel({
   company,
   role,
+  mode,
   readiness,
   plan,
   sessions,
@@ -29,6 +40,7 @@ export function ReviewPanel({
 }: {
   company: string;
   role: string;
+  mode: TrainingMode;
   readiness: ReadinessMap;
   plan: InterviewPlan | null;
   sessions: Record<string, ResumeInterviewSession>;
@@ -42,11 +54,22 @@ export function ReviewPanel({
   onContinue: () => void;
   onTrainAgain: () => void;
 }) {
-  const verified = readiness.cells.filter((c) => c.status === 'verified').length;
-  const shaky = readiness.cells.filter((c) => c.status === 'shaky').length;
-  const uncovered = readiness.cells.filter(
-    (c) => c.status === 'unrated' || c.status === 'gap',
-  ).length;
+  const archive = useMemo(
+    () =>
+      plan
+        ? buildReviewArchive({
+            company,
+            role,
+            mode,
+            plan,
+            sessions,
+            readiness,
+            id: 'live',
+            at: plan.generatedAt,
+          })
+        : null,
+    [company, role, mode, plan, sessions, readiness],
+  );
   const incomplete = plan ? plan.points.some((p) => !sessions[p.id]) : false;
   const progressSummary = summarize(records);
   const debrief = (plan?.points ?? [])
@@ -60,77 +83,62 @@ export function ReviewPanel({
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[280px_1fr]">
       <aside className="space-y-3 lg:sticky lg:top-4">
-        <div>
-          <h1 className="font-brand text-2xl leading-tight">
-            {company} · {role}
-          </h1>
-          <p className="mt-1 text-xs text-[var(--muted)]">
-            {readiness.total > 0
-              ? `高频考点 ${readiness.total} 个，已验证 ${verified} 个。`
-              : '还没有可对照的考点。'}
-          </p>
-        </div>
-
-        <div className="surface rounded-lg p-4">
-          <CoverageRing
-            value={verified}
-            max={Math.max(1, readiness.total)}
-            label="已验证"
-            caption={`经不起追问 ${shaky} · 尚未覆盖 ${uncovered}`}
-            tone={verified > 0 && shaky === 0 ? 'ok' : 'accent'}
-          />
-          <div className="mt-4">
-            <StackedMeter
-              label="准备度"
-              segments={[
-                { value: verified, tone: 'ok', title: '已验证' },
-                { value: shaky, tone: 'warn', title: '需加强' },
-                { value: uncovered, tone: 'muted', title: '尚未覆盖' },
-              ]}
-              hint="不看平均分，只看哪几个点还没站住。"
-            />
+        {archive ? (
+          <ReviewHeadline archive={archive} live />
+        ) : (
+          <div>
+            <h1 className="font-brand text-2xl leading-tight">
+              {company} · {role}
+            </h1>
+            <p className="mt-1 text-xs text-[var(--muted)]">还没有可回看的追问。</p>
           </div>
-        </div>
+        )}
 
-        <div className="grid grid-cols-3 gap-2">
-          <Bucket label="已验证" value={verified} tone="ok" />
-          <Bucket label="需加强" value={shaky} tone="warn" />
-          <Bucket label="未覆盖" value={uncovered} />
-        </div>
+        {archive && <ReviewStats archive={archive} />}
 
         <div className="flex flex-wrap gap-2">
           {incomplete && (
-            <button type="button" onClick={onContinue} className="btn-primary rounded-md px-4 py-2 text-xs">
+            <button
+              type="button"
+              onClick={onContinue}
+              className="btn-primary rounded-md px-4 py-2 text-xs"
+            >
               继续未完成的题
             </button>
           )}
-          <button type="button" onClick={onTrainAgain} className="btn-primary rounded-md px-4 py-2 text-xs">
+          <button
+            type="button"
+            onClick={onTrainAgain}
+            className="btn-primary rounded-md px-4 py-2 text-xs"
+          >
             再练一轮
           </button>
           <button type="button" onClick={onRestart} className="btn-ghost rounded-md px-4 py-2 text-xs">
             换一个目标岗位
           </button>
         </div>
+
+        {demo ? (
+          <p className="text-[11px] leading-relaxed text-[var(--muted)]">
+            演示模式不写入本机历史。用自己的材料练完一场，往期复盘才会留下问答原文。
+          </p>
+        ) : archive ? (
+          <p className="text-[11px] leading-relaxed text-[var(--muted)]">
+            这场复盘已收入本机，不上传服务器。
+            <Link href="/history" className="ml-1 text-[var(--accent)] hover:underline">
+              查看往期 →
+            </Link>
+          </p>
+        ) : null}
       </aside>
 
       <section className="space-y-4">
-        <div className="surface rounded-lg p-4">
-          <p className="text-sm font-medium">今天不用继续刷题。只补这 3 个：</p>
-          {readiness.nextThree.length === 0 ? (
-            <p className="mt-2 text-sm text-[var(--muted)]">当前没有必须补的缺口。</p>
-          ) : (
-            <ol className="mt-3 space-y-3">
-              {readiness.nextThree.map((a, i) => (
-                <li key={a.topicId}>
-                  <p className="text-sm font-medium">
-                    {i + 1}. {a.title}
-                  </p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-[var(--muted)]">{a.reason}</p>
-                </li>
-              ))}
-            </ol>
-          )}
-        </div>
+        {archive && (
+          <>
+            <NextThreeCard archive={archive} live />
+            <PointReplayList key={archive.fingerprint} archive={archive} />
+          </>
+        )}
 
         <div className="surface rounded-lg p-4">
           <div className="flex items-baseline justify-between gap-2">
@@ -155,37 +163,6 @@ export function ReviewPanel({
           onApply={onApplyResume}
         />
       </section>
-    </div>
-  );
-}
-
-function Bucket({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone?: 'ok' | 'warn';
-}) {
-  return (
-    <div
-      className={`rounded-lg border p-3 ${
-        tone === 'warn'
-          ? 'border-[rgba(161,98,7,0.3)] bg-[rgba(161,98,7,0.08)]'
-          : tone === 'ok'
-            ? 'border-[rgba(31,107,74,0.25)] bg-[rgba(31,107,74,0.08)]'
-            : 'surface'
-      }`}
-    >
-      <p className="text-[11px] text-[var(--muted)]">{label}</p>
-      <p
-        className={`font-brand mt-1 text-2xl tabular-nums ${
-          tone === 'warn' ? 'text-[var(--warn)]' : tone === 'ok' ? 'text-[var(--ok)]' : ''
-        }`}
-      >
-        {value}
-      </p>
     </div>
   );
 }

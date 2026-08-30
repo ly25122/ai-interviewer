@@ -8,6 +8,7 @@ import type {
   Syllabus,
 } from '@/lib/types';
 import { toRecord } from '@/lib/progress';
+import { buildReviewArchive } from '@/lib/history';
 import sample from '@/lib/interview-sample.json';
 
 /**
@@ -577,3 +578,17 @@ export const demoProgress: PracticeRecord[] = [
     ),
   ),
 ];
+
+/** 历史页空状态的演示预览，不写入 localStorage */
+export function demoReviewArchive() {
+  return buildReviewArchive({
+    id: 'demo-preview',
+    at: new Date().toISOString(),
+    company: demoCompany,
+    role: demoRole,
+    mode: 'full',
+    plan: demoPlan,
+    sessions: demoSessions,
+    syllabus: demoSyllabus,
+  });
+}

@@ -303,6 +303,39 @@ export interface PracticeRecord {
   score: number;
 }
 
+/** 一场训练里单个追问点的完整快照，用于事后回看 */
+export interface ReviewPointSnapshot {
+  id: string;
+  title: string;
+  source: AttackSource;
+  outcome: ProbeOutcome;
+  collapsedAtTurn: number | null;
+  score: number;
+  turns: ProbeTurn[];
+}
+
+/**
+ * 一场训练的完整复盘。存在本机，不上传。
+ * 够还原：问了什么、你怎么答、判定理由、当时该补哪 3 个。
+ */
+export interface ReviewArchive {
+  id: string;
+  /** 同一场反复进出复盘页时用来去重 */
+  fingerprint: string;
+  at: string;
+  company: string;
+  role: string;
+  mode: TrainingMode;
+  /** 对应这场提纲的生成时间，同一场继续练完时覆盖而不是新开一条 */
+  planAt: string;
+  verified: number;
+  shaky: number;
+  uncovered: number;
+  avgScore: number;
+  nextThree: NextAction[];
+  points: ReviewPointSnapshot[];
+}
+
 /** 对照 JD / 面试结果给出的简历修改建议 */
 export type ResumeEditKind = 'strengthen' | 'soften' | 'add' | 'cut';
 

@@ -1,6 +1,13 @@
 'use client';
 
 import { useMemo, useSyncExternalStore } from 'react';
+import Link from 'next/link';
+import {
+  formatArchiveTime,
+  getHistoryServerSnapshot,
+  getHistorySnapshot,
+  subscribeHistory,
+} from '@/lib/history';
 import {
   getProgressServerSnapshot,
   getProgressSnapshot,
@@ -20,14 +27,28 @@ export function HomeStatus() {
     getProgressSnapshot,
     getProgressServerSnapshot,
   );
+  const archives = useSyncExternalStore(
+    subscribeHistory,
+    getHistorySnapshot,
+    getHistoryServerSnapshot,
+  );
   const summary = useMemo(() => summarize(records), [records]);
   const last = records.at(-1);
+  const lastArchive = archives[0];
+  const recent = archives.slice(0, 3);
 
   let eyebrow = '近期状况';
   let headline = '还没开过一场';
   let body = '不知道这家怎么考，是最耗人的。先把情报凑齐，再针对性开练。';
 
-  if (summary.today.count > 0) {
+  if (lastArchive) {
+    eyebrow = formatArchiveTime(lastArchive.at);
+    headline = lastArchive.company;
+    body =
+      lastArchive.shaky > lastArchive.verified
+        ? `「${lastArchive.role}」需加强 ${lastArchive.shaky} 个点。点开能回看当时怎么答崩的。`
+        : `「${lastArchive.role}」已验证 ${lastArchive.verified} 个。回看问答，比再刷一堆面经有用。`;
+  } else if (summary.today.count > 0) {
     eyebrow = '今天';
     if (summary.today.collapsed > summary.today.verified) {
       headline = '今天被追问打回来了';
@@ -62,33 +83,64 @@ export function HomeStatus() {
       </div>
 
       <div className="mt-10">
-        <p className="text-[11px] tracking-[0.16em] text-white/35">近 7 天</p>
-        <div className="mt-3 flex items-end gap-2">
-          {summary.week.map((d) => {
-            const today = d.date === summary.today.date;
-            const h = d.count === 0 ? 8 : Math.min(36, 10 + d.count * 8);
-            return (
-              <div key={d.date} className="flex flex-1 flex-col items-center gap-1.5">
-                <span
-                  className={`w-full rounded-sm ${
-                    d.count === 0
-                      ? 'bg-white/10'
-                      : today
-                        ? 'bg-[#7dbaa8]'
-                        : 'bg-white/35'
-                  }`}
-                  style={{ height: h }}
-                  title={`${d.date} · ${d.count} 次`}
-                />
-              </div>
-            );
-          })}
-        </div>
-        <p className="mt-4 text-xs text-white/40">
-          {summary.totalCount > 0
-            ? `一共练过 ${summary.totalCount} 个点${summary.streak > 0 ? ` · 连续 ${summary.streak} 天` : ''}`
-            : '练过之后，这里会记下你撑没撑住。'}
-        </p>
+        {recent.length > 0 ? (
+          <div>
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-[11px] tracking-[0.16em] text-white/35">往期复盘</p>
+              <Link href="/history" className="text-[11px] text-[#7dbaa8] hover:text-white">
+                全部 {archives.length} 场 →
+              </Link>
+            </div>
+            <ul className="mt-3 space-y-2">
+              {recent.map((a) => (
+                <li key={a.id}>
+                  <Link
+                    href={`/history?id=${encodeURIComponent(a.id)}`}
+                    className="block rounded-md border border-white/10 bg-white/[0.03] px-3 py-2.5 transition hover:border-white/25"
+                  >
+                    <p className="text-[11px] text-white/40">{formatArchiveTime(a.at)}</p>
+                    <p className="mt-0.5 truncate text-sm text-white/85">
+                      {a.company} · {a.role}
+                    </p>
+                    <p className="mt-1 text-[11px] text-white/45">
+                      已验证 {a.verified} · 需加强 {a.shaky} · 均分 {a.avgScore}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <>
+            <p className="text-[11px] tracking-[0.16em] text-white/35">近 7 天</p>
+            <div className="mt-3 flex items-end gap-2">
+              {summary.week.map((d) => {
+                const today = d.date === summary.today.date;
+                const h = d.count === 0 ? 8 : Math.min(36, 10 + d.count * 8);
+                return (
+                  <div key={d.date} className="flex flex-1 flex-col items-center gap-1.5">
+                    <span
+                      className={`w-full rounded-sm ${
+                        d.count === 0
+                          ? 'bg-white/10'
+                          : today
+                            ? 'bg-[#7dbaa8]'
+                            : 'bg-white/35'
+                      }`}
+                      style={{ height: h }}
+                      title={`${d.date} · ${d.count} 次`}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-4 text-xs text-white/40">
+              {summary.totalCount > 0
+                ? `一共练过 ${summary.totalCount} 个点${summary.streak > 0 ? ` · 连续 ${summary.streak} 天` : ''}`
+                : '练完一场，问答原文会留在这台设备上。'}
+            </p>
+          </>
+        )}
       </div>
     </aside>
   );

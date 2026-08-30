@@ -21,6 +21,7 @@ import {
   toRecord,
 } from '@/lib/progress';
 import { buildPrepReadiness } from '@/lib/engine/readiness';
+import { buildReviewArchive, saveReviewArchive } from '@/lib/history';
 import type {
   IntelligenceItem,
   InterviewPlan,
@@ -56,6 +57,7 @@ export function usePrepProject(startDemo: boolean) {
   );
   const [intel, setIntel] = useState<IntelligenceItem[]>(startDemo ? demoIntel : []);
   const [demo, setDemo] = useState(startDemo);
+  const [trainingMode, setTrainingMode] = useState<TrainingMode>('full');
   const savedProgress = useSyncExternalStore(
     subscribeProgress,
     getProgressSnapshot,
@@ -83,6 +85,7 @@ export function usePrepProject(startDemo: boolean) {
     setError('');
     setDemo(true);
     setLive(false);
+    setTrainingMode('full');
     setPhase('intel');
   }
 
@@ -108,12 +111,27 @@ export function usePrepProject(startDemo: boolean) {
     setError('');
     setDemo(false);
     setLive(false);
+    setTrainingMode('full');
     setPhase('setup');
+  }
+
+  function persistArchive(used: Record<string, ResumeInterviewSession> = sessions) {
+    if (demo || !plan) return;
+    const archive = buildReviewArchive({
+      company,
+      role,
+      mode: trainingMode,
+      plan,
+      sessions: used,
+      syllabus,
+    });
+    if (archive) saveReviewArchive(archive);
   }
 
   function goPhase(next: PrepPhase) {
     setError('');
     setLive(false);
+    if (next === 'review') persistArchive();
     setPhase(next);
   }
 
@@ -197,6 +215,7 @@ export function usePrepProject(startDemo: boolean) {
   }
 
   async function startTraining(mode: TrainingMode) {
+    setTrainingMode(mode);
     if (demo && plan) {
       const next =
         mode === 'intel'
@@ -244,6 +263,7 @@ export function usePrepProject(startDemo: boolean) {
     if (nextIdx === -1) {
       const anyLeft = plan.points.findIndex((p) => !nextSessions[p.id]);
       if (anyLeft === -1) {
+        persistArchive(nextSessions);
         setLive(false);
         setPhase('review');
       } else setActiveIndex(anyLeft);
@@ -279,6 +299,7 @@ export function usePrepProject(startDemo: boolean) {
     sessions,
     intel,
     demo,
+    trainingMode,
     progressRecords,
     activePoint,
     readiness,

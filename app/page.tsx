@@ -9,6 +9,12 @@ export default function HomePage() {
 
       <nav className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-6 sm:px-6">
         <span className="font-brand text-xl tracking-tight text-white">情报驱动 · 备战</span>
+        <Link
+          href="/history"
+          className="text-sm text-white/55 transition hover:text-white"
+        >
+          往期复盘
+        </Link>
       </nav>
 
       <section className="relative z-10 mx-auto grid min-h-[calc(100dvh-88px)] w-full max-w-6xl items-stretch gap-8 px-5 pb-16 pt-4 sm:px-6 lg:grid-cols-2 lg:gap-12">

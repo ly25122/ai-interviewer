@@ -59,6 +59,12 @@ function InterviewApp() {
           <p className="hidden shrink-0 text-[11px] text-[var(--muted)] sm:block">
             {prep.company && prep.role ? `${prep.company} · ${prep.role}` : '先锁定目标岗位'}
           </p>
+          <Link
+            href="/history"
+            className="shrink-0 text-[11px] text-[var(--muted)] hover:text-[var(--ink)]"
+          >
+            往期复盘
+          </Link>
         </div>
       </header>
 
@@ -161,6 +167,7 @@ function InterviewApp() {
           <ReviewPanel
             company={prep.company}
             role={prep.role}
+            mode={prep.trainingMode}
             readiness={prep.readiness}
             plan={prep.plan}
             sessions={prep.sessions}
