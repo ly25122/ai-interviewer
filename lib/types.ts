@@ -75,6 +75,20 @@ export interface AnalyzeInput {
   comments?: string[];
 }
 
+/** 证据审计结果。既用于界面标注降级情况，也用于评测集统计幻觉率 */
+export interface EvidenceAudit {
+  totalQuotes: number;
+  /** 无法在原文中逐字找到的引用数量 */
+  invalidQuotes: number;
+  /** 因证据不成立而被强制降级为 neutral 的维度 */
+  downgraded: SignalDimension[];
+}
+
+export interface AnalyzeResult {
+  analysis: PostAnalysis;
+  audit: EvidenceAudit;
+}
+
 /* ===================== 第一层：考纲 ===================== */
 
 /** 溯源记录。用户必须能追到每个考点是从哪篇面经来的，否则考纲不可信 */

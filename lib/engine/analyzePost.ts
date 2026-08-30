@@ -2,12 +2,16 @@ import { chat, parseJson } from '../llm';
 import { ANALYZE_SYSTEM_PROMPT, buildAnalyzeUserPrompt } from './prompts';
 import type {
   AnalyzeInput,
+  AnalyzeResult,
   ContentTrust,
+  EvidenceAudit,
   EvidenceSignal,
   PostAnalysis,
   SignalDimension,
   Verdict,
 } from '../types';
+
+export type { AnalyzeResult, EvidenceAudit } from '../types';
 
 const ALL_DIMENSIONS: SignalDimension[] = [
   'commercial',
@@ -19,20 +23,6 @@ const ALL_DIMENSIONS: SignalDimension[] = [
 
 /** 短于此长度的引用不构成有效证据，避免模型摘出「的」「问了」这类无意义片段充数 */
 const MIN_QUOTE_LENGTH = 4;
-
-export interface EvidenceAudit {
-  totalQuotes: number;
-  /** 无法在原文中逐字找到的引用数量 */
-  invalidQuotes: number;
-  /** 因证据不成立而被强制降级为 neutral 的维度 */
-  downgraded: SignalDimension[];
-}
-
-export interface AnalyzeResult {
-  analysis: PostAnalysis;
-  /** 证据审计结果，用于评测集统计幻觉率，也用于在界面上标注降级情况 */
-  audit: EvidenceAudit;
-}
 
 /**
  * 归一化后比对，容忍模型在空白与标点上的细微改动，
