@@ -1,0 +1,15 @@
+# Caddy 会自动申请并续期 Let's Encrypt 证书，无需手动配置 TLS。
+# HTTPS 在这个项目里是硬要求：页面本身要走 HTTPS，未来的浏览器插件
+# 运行在 HTTPS 的小红书页面上，调用 HTTP 接口会被浏览器以 mixed content 拦截。
+#
+# 使用前把 example.com 换成你的域名，并确保域名 A 记录已解析到本机公网 IP。
+
+example.com {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3000
+
+	log {
+		output file /var/log/caddy/access.log
+		format console
+	}
+}

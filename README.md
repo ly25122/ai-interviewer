@@ -1,36 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 底气
 
-## Getting Started
+> 让你知道自己准备到哪了。
 
-First, run the development server:
+把散落在小红书、真假混杂的面经，提纯成这个岗位的**真实考纲**，再变成你个人的**准备度地图**。
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+面向准备大厂技术类实习面试的本科生。
+
+## 它解决什么问题
+
+备考期的焦虑不来自懒惰，来自三个「不知道」：不知道这个岗位到底考什么、不知道自己现在什么水平、不知道下一步做什么。
+
+所以这个产品不提供情绪安慰——那件事 ChatGPT 做得比我们好，而且学生自己清楚那是廉价安慰。它做的是把不确定变成确定。
+
+## 三层结构
+
+```
+第一层 考纲   面经提纯与聚合        解决「范围」不确定
+第二层 自评   逐考点三档快评        解决「位置」不确定
+第三层 实测   对声称会的考点追问验证  解决「距离」不确定
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+第三层是关键。它让产品能对用户说出这样一句话：
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> 你以为自己会的 12 个考点里，有 5 个经不起追问。
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+学生真正的恐惧不是「知道自己不会」，而是「我以为我会的东西可能其实不会」。把这个落差量化出来，反而是最强的安定剂。
 
-## Learn More
+## 两个核心设计
 
-To learn more about Next.js, take a look at the following resources:
+### 商业意图与题目可用性分开判断
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+一篇引流广告帖里的面试题可能完全真实，因为机构也需要真题来获客。所以引擎输出两个独立结论：`verdict`（这篇帖子想干什么）与 `contentTrust`（里面的题目能不能用）。即使判定为广告，题目依然可能进入考纲。
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 指控必须举证
 
-## Deploy on Vercel
+每个不利于可信度的判断，都必须给出逐字摘自原文的证据片段，并且由**代码层**逐条核验——凡是无法在原文中检索到的引用一律作废，该维度强制降级为「证据不足」，必要时回撤整体判定。
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+反过来，「全文没有联系方式」这类判断的依据是某物不存在，天然无法引用原文，因此不要求举证。举证责任只落在指控方。
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+这道防线写在代码里而不是 prompt 里，因为 prompt 约束模型可以违反，代码校验不能。
+
+## 运行
+
+需要 Node.js 22 以上。
+
+```bash
+npm install
+cp .env.example .env.local   # 填入 DeepSeek API Key
+npm run dev
+```
+
+打开 http://localhost:3000
+
+| 路径 | 用途 |
+|---|---|
+| `/` | 单篇面经分析，带三篇示例一键填充 |
+| `/prepare` | 完整闭环：建考纲 → 自评 → 准备度地图 |
+
+### 验证
+
+```bash
+npm test                          # 纯函数单元测试
+node scripts/smoke.mjs            # 判定引擎端到端冒烟
+node scripts/smoke-syllabus.mjs   # 考纲聚合链路冒烟
+```
+
+## 技术栈
+
+- Next.js 16 App Router + TypeScript + Tailwind CSS 4
+- DeepSeek（`deepseek-chat`），判定类调用一律 temperature 0
+- 个人自评与实测数据存浏览器 localStorage，不上传服务器，因此无需账号体系
+- Vitest
+
+## 部署
+
+```bash
+bash deploy/setup.sh <域名> <git仓库地址> <DeepSeek API Key>
+```
+
+脚本会安装 Node 与 Caddy、写入评委 SSH 公钥、构建并以 systemd 托管、由 Caddy 自动申请 HTTPS 证书。
+
+服务器地域必须选**香港或新加坡**。国内地域绑定域名走 80/443 需要 ICP 备案，而本项目对 HTTPS 有硬性依赖。
+
+## 数据来源与合规
+
+- 产品运行时不向小红书发起任何请求，语料由用户手工粘贴
+- 作者标识入库前哈希化，不存储昵称与头像
+- 仓库内的示例数据全部为虚构内容，不含任何真实用户信息
+
+## 目录
+
+```
+app/           页面与 API 路由
+lib/types.ts   全部数据结构定义
+lib/engine/    分析引擎：判定、考纲聚合、权重、准备度、追问
+lib/samples.*  示例面经，页面与测试脚本共用
+scripts/       端到端冒烟脚本
+deploy/        部署脚本与服务配置
+docs/PRD.md    需求文档
+```
+
+## AI 使用说明
+
+本项目在 Cursor 中开发，代码由 AI 辅助生成，产品判断、方向取舍与验收标准由人确定。详细分工见 `docs/PRD.md` 与提交历史。
