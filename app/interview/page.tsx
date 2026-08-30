@@ -183,6 +183,7 @@ function InterviewApp() {
             intel={prep.intel}
             demo={prep.demo}
             onApplyResume={prep.setResume}
+            onViewResume={() => prep.goPhase('setup')}
             onRestart={prep.resetAll}
             onContinue={prep.continueTraining}
             onTrainAgain={() => prep.goPhase('practice')}

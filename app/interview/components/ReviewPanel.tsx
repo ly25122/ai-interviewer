@@ -1,12 +1,13 @@
 'use client';
 
-import { useMemo, useState, useSyncExternalStore } from 'react';
-import Link from 'next/link';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { WeekTrend } from '@/app/components/ProgressViz';
 import {
+  doneCount,
   formatArchiveTime,
   getHistoryServerSnapshot,
   getHistorySnapshot,
+  modeLabel,
   subscribeHistory,
 } from '@/lib/history';
 import { buildReviewArchive } from '@/lib/history';
@@ -17,6 +18,7 @@ import type {
   PracticeRecord,
   ReadinessMap,
   ResumeInterviewSession,
+  ReviewArchive,
   TrainingMode,
 } from '@/lib/types';
 import {
@@ -29,21 +31,56 @@ import { ResumeCoach } from './ResumeCoach';
 
 type ReviewTab = 'session' | 'history' | 'resume';
 
+function readHash(): { tab: ReviewTab; archiveId: string | null } {
+  if (typeof window === 'undefined') return { tab: 'session', archiveId: null };
+  const raw = decodeURIComponent(window.location.hash.replace(/^#\/?/, ''));
+  if (raw === 'resume') return { tab: 'resume', archiveId: null };
+  if (raw === 'history') return { tab: 'history', archiveId: null };
+  if (raw.startsWith('history/')) {
+    const id = raw.slice('history/'.length);
+    return { tab: 'history', archiveId: id || null };
+  }
+  return { tab: 'session', archiveId: null };
+}
+
+function hashFor(tab: ReviewTab, archiveId: string | null) {
+  if (tab === 'history' && archiveId) return `#history/${encodeURIComponent(archiveId)}`;
+  if (tab === 'history') return '#history';
+  if (tab === 'resume') return '#resume';
+  return '#session';
+}
+
 function encourage(input: {
   verified: number;
   shaky: number;
   streak: number;
-}): string {
+}): { title: string; body: string; icon: 'streak' | 'hold' | 'gap' | 'start' } {
   if (input.streak > 1 && input.verified >= input.shaky) {
-    return `连续 ${input.streak} 天都有练。这几个点站住了，下次专攻剩下的就行。`;
+    return {
+      icon: 'streak',
+      title: `连续 ${input.streak} 天都在上场`,
+      body: '站住的这几个点已经是你的底气。不是运气，是你真的讲清楚了。剩下的专攻就够，下一场会更稳。',
+    };
   }
   if (input.shaky > input.verified) {
-    return '这轮被追回来几次不可惜，至少知道该补哪，比盲刷一套题强。';
+    return {
+      icon: 'gap',
+      title: '被追回来，说明你已经碰到真题了',
+      body: '这不可惜。盲区摊开了，就有下一刀往哪砍。带着这几个点再练一轮，会明显比今天从容。',
+    };
   }
   if (input.verified > 0) {
-    return '这几个点撑住了。把漏洞补上，下一场会稳一点。';
+    return {
+      icon: 'hold',
+      title: `这 ${input.verified} 个点，你撑住了`,
+      body: '面试官往下追，你还能往下讲。把回放里没接上的那一层补实，下一场会更像你自己的东西。',
+    };
   }
-  return '先把这场回放看完。具体说到哪一层，比再找题更有用。';
+  return {
+    icon: 'start',
+    title: '你已经走完一场完整训练',
+    body: '先把回放看完。具体说到哪一层、卡在哪一句，比再找一套题更有用。你不是从零开始，是已经有了下一刀的位置。',
+  };
 }
 
 function sessionComment(input: { verified: number; shaky: number; uncovered: number; avgScore: number }): {
@@ -68,6 +105,58 @@ function sessionComment(input: { verified: number; shaky: number; uncovered: num
   };
 }
 
+function EncourageIcon({ kind }: { kind: 'streak' | 'hold' | 'gap' | 'start' }) {
+  const common = 'h-10 w-10 shrink-0 text-[var(--accent)]';
+  if (kind === 'streak') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" className={common} aria-hidden>
+        <path
+          d="M12 3c2 3.2 1.2 5.4 0 7 2.4-.4 4.8.4 6.2 2.6 1.6 2.6.8 6.2-2.2 7.8-3 1.6-6.8.6-8.4-2.2C5.8 15.4 6 12.2 8.2 10c-2 3 0 5.4 1.6 6.2C8 13.6 9.4 8.8 12 3Z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+  }
+  if (kind === 'hold') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" className={common} aria-hidden>
+        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M8 12.2 10.6 15 16 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  if (kind === 'gap') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" className={common} aria-hidden>
+        <path
+          d="M4 16.5 10 8l3.2 4.2L17 7.5"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path d="M15 7.5h4v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={common} aria-hidden>
+      <path
+        d="M9 18h6M10 21h4"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8.2 14.5c-1.8-1.4-2.7-3.4-2.2-5.4C6.6 6.6 9 4.8 12 4.8s5.4 1.8 6 4.3c.5 2-.4 4-2.2 5.4-.6.5-1 1.2-1.1 2H9.3c-.1-.8-.5-1.5-1.1-2Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function ReviewPanel({
   company,
   role,
@@ -81,6 +170,7 @@ export function ReviewPanel({
   intel,
   demo,
   onApplyResume,
+  onViewResume,
   onRestart,
   onContinue,
   onTrainAgain,
@@ -97,11 +187,14 @@ export function ReviewPanel({
   intel: IntelligenceItem[];
   demo: boolean;
   onApplyResume: (next: string) => void;
+  onViewResume: () => void;
   onRestart: () => void;
   onContinue: () => void;
   onTrainAgain: () => void;
 }) {
-  const [tab, setTab] = useState<ReviewTab>('session');
+  const initial = readHash();
+  const [tab, setTab] = useState<ReviewTab>(initial.tab);
+  const [archiveId, setArchiveId] = useState<string | null>(initial.archiveId);
   const archives = useSyncExternalStore(
     subscribeHistory,
     getHistorySnapshot,
@@ -123,6 +216,7 @@ export function ReviewPanel({
         : null,
     [company, role, mode, plan, sessions, readiness],
   );
+  const selectedPast = archiveId ? (archives.find((a) => a.id === archiveId) ?? null) : null;
   const incomplete = plan ? plan.points.some((p) => !sessions[p.id]) : false;
   const progressSummary = summarize(records);
   const debrief = (plan?.points ?? [])
@@ -146,21 +240,67 @@ export function ReviewPanel({
       })
     : null;
 
+  function go(nextTab: ReviewTab, nextArchiveId: string | null = null, replace = false) {
+    const hash = hashFor(nextTab, nextArchiveId);
+    if (typeof window !== 'undefined') {
+      const url = `${window.location.pathname}${window.location.search}${hash}`;
+      if (replace) window.history.replaceState({ reviewNav: true }, '', url);
+      else if (window.location.hash !== hash) window.history.pushState({ reviewNav: true }, '', url);
+    }
+    setTab(nextTab);
+    setArchiveId(nextArchiveId);
+  }
+
+  function goBack() {
+    if (tab === 'history' && archiveId) {
+      go('history', null, true);
+      return;
+    }
+    go('session', null, true);
+  }
+
+  useEffect(() => {
+    const sync = () => {
+      const next = readHash();
+      setTab(next.tab);
+      setArchiveId(next.archiveId);
+    };
+    window.addEventListener('popstate', sync);
+    window.addEventListener('hashchange', sync);
+    return () => {
+      window.removeEventListener('popstate', sync);
+      window.removeEventListener('hashchange', sync);
+    };
+  }, []);
+
   const tabs: Array<{ id: ReviewTab; label: string }> = [
     { id: 'session', label: '本场复盘' },
     { id: 'history', label: '历史面试' },
     { id: 'resume', label: '简历诊断' },
   ];
 
+  const backLabel =
+    tab === 'history' && archiveId ? '返回历史面试' : tab !== 'session' ? '返回本场复盘' : null;
+
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[220px_1fr]">
       <aside className="space-y-3 lg:sticky lg:top-4">
+        {backLabel && (
+          <button
+            type="button"
+            onClick={goBack}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-[var(--muted)] hover:bg-black/5 hover:text-[var(--ink)]"
+          >
+            <span aria-hidden>←</span>
+            {backLabel}
+          </button>
+        )}
         <nav className="surface rounded-lg p-2">
           {tabs.map((t) => (
             <button
               key={t.id}
               type="button"
-              onClick={() => setTab(t.id)}
+              onClick={() => go(t.id, null)}
               className={`block w-full rounded-md px-3 py-2 text-left text-sm ${
                 tab === t.id
                   ? 'bg-[var(--ink)] text-[var(--paper)]'
@@ -181,24 +321,26 @@ export function ReviewPanel({
                   : '还没有往期记录。'}
               </p>
             ) : (
-              archives.slice(0, 6).map((a) => (
-                <Link
+              archives.slice(0, 8).map((a) => (
+                <button
                   key={a.id}
-                  href={`/history?id=${encodeURIComponent(a.id)}`}
-                  className="block rounded-lg border border-[var(--line)] px-3 py-2 hover:border-black/25"
+                  type="button"
+                  onClick={() => go('history', a.id)}
+                  className={`block w-full rounded-lg border px-3 py-2 text-left hover:border-black/25 ${
+                    archiveId === a.id
+                      ? 'border-[var(--ink)] bg-white'
+                      : 'border-[var(--line)]'
+                  }`}
                 >
                   <p className="text-[11px] text-[var(--muted)]">{formatArchiveTime(a.at)}</p>
                   <p className="mt-0.5 truncate text-xs font-medium">
                     {a.company} · {a.role}
                   </p>
-                </Link>
+                </button>
               ))
             )}
-            <Link href="/history" className="block text-xs text-[var(--accent)] hover:underline">
-              全部往期 →
-            </Link>
           </div>
-        ) : (
+        ) : tab === 'session' ? (
           <>
             {archive && <ReviewHeadline archive={archive} live />}
             {archive && <ReviewStats archive={archive} />}
@@ -228,15 +370,23 @@ export function ReviewPanel({
               </button>
             </div>
           </>
-        )}
+        ) : null}
       </aside>
 
       <section className="space-y-4">
         {tab === 'session' && (
           <>
-            <div className="surface rounded-lg p-4">
-              <WeekTrend days={progressSummary.week} />
-              <p className="mt-3 text-sm leading-relaxed">{words}</p>
+            <div className="surface rounded-lg p-5">
+              <div className="flex items-start gap-4 rounded-lg border border-[var(--accent)]/30 bg-[rgba(31,122,102,0.08)] px-4 py-5">
+                <EncourageIcon kind={words.icon} />
+                <div className="min-w-0">
+                  <p className="font-brand text-2xl leading-snug">{words.title}</p>
+                  <p className="mt-2 text-lg leading-relaxed">{words.body}</p>
+                </div>
+              </div>
+              <div className="mt-5">
+                <WeekTrend days={progressSummary.week} />
+              </div>
             </div>
             {evals && archive && (
               <div className="surface rounded-lg p-4">
@@ -260,10 +410,16 @@ export function ReviewPanel({
           </>
         )}
 
-        {tab === 'history' && (
+        {tab === 'history' && !selectedPast && (
           <div className="surface rounded-lg p-5 text-sm leading-relaxed text-[var(--muted)]">
-            左边点一场，会跳到往期复盘页看完整问答。记录只留在这台设备上。
+            {archives.length === 0
+              ? '还没有往期面试。用自己的材料练完一场，会留在这台设备上。'
+              : '左边点一场，在这一页回看完整问答。点返回可回到本场复盘，不会离开备战。'}
           </div>
+        )}
+
+        {tab === 'history' && selectedPast && (
+          <PastArchiveDetail archive={selectedPast} onBack={goBack} />
         )}
 
         {tab === 'resume' && (
@@ -274,9 +430,39 @@ export function ReviewPanel({
             demo={demo}
             debrief={debrief}
             onApply={onApplyResume}
+            onViewResume={onViewResume}
+            onBackToSession={() => go('session', null, true)}
           />
         )}
       </section>
+    </div>
+  );
+}
+
+function PastArchiveDetail({
+  archive,
+  onBack,
+}: {
+  archive: ReviewArchive;
+  onBack: () => void;
+}) {
+  const done = doneCount(archive);
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-[var(--muted)]">
+          {modeLabel(archive.mode)} · {done}/{archive.points.length} 题 · 均分 {archive.avgScore}
+        </p>
+        <button type="button" onClick={onBack} className="btn-ghost rounded-md px-3 py-1.5 text-xs">
+          ← 返回历史面试
+        </button>
+      </div>
+      <ReviewHeadline archive={archive} />
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <ReviewStats archive={archive} />
+        <NextThreeCard archive={archive} />
+      </div>
+      <PointReplayList key={archive.id} archive={archive} />
     </div>
   );
 }
