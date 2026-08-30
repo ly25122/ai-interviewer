@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { planResumeInterview } from '@/lib/engine/resumeInterview';
 import { LLMError } from '@/lib/llm';
+import type { IntelligenceItem } from '@/lib/types';
 
 export const runtime = 'nodejs';
 export const maxDuration = 90;
 
 export async function POST(request: Request) {
-  let body: { resume?: string; jd?: string };
+  let body: { resume?: string; jd?: string; intelligence?: IntelligenceItem[] };
   try {
     body = await request.json();
   } catch {
@@ -15,6 +16,7 @@ export async function POST(request: Request) {
 
   const resume = body.resume?.trim() ?? '';
   const jd = body.jd?.trim() ?? '';
+  const intelligence = Array.isArray(body.intelligence) ? body.intelligence : [];
 
   if (resume.length < 80) {
     return NextResponse.json({ error: '简历太短，请粘贴完整简历文本' }, { status: 400 });
@@ -24,7 +26,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const plan = await planResumeInterview(resume, jd);
+    const plan = await planResumeInterview(resume, jd, intelligence);
     return NextResponse.json({ plan });
   } catch (error) {
     if (error instanceof LLMError) {

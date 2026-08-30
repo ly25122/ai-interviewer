@@ -8,47 +8,48 @@ export default function HomePage() {
 
       <nav className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-6 sm:px-6">
         <span className="font-brand text-xl tracking-tight text-white">AI面试官</span>
-        <div className="flex items-center gap-4 text-sm text-white/65 sm:gap-5">
-          <Link href="/interview" className="transition hover:text-white">
-            简历面试
-          </Link>
-          <Link href="/prepare" className="transition hover:text-white">
-            面经准备
-          </Link>
-          <Link href="/analyze" className="hidden transition hover:text-white sm:inline">
-            面经甄别
-          </Link>
-        </div>
       </nav>
 
       <section className="relative z-10 mx-auto flex min-h-[calc(100dvh-88px)] w-full max-w-6xl flex-col justify-center px-5 pb-16 pt-8 sm:px-6">
-        <p className="anim-rise text-sm tracking-[0.22em] text-[#7dbaa8]">TECH INTERN · MOCK</p>
-        <h1 className="anim-rise-delay font-brand mt-5 max-w-4xl text-[clamp(2.8rem,8vw,5.6rem)] leading-[1.05] text-white">
-          AI面试官
+        <p className="anim-rise text-sm tracking-[0.22em] text-[#7dbaa8]">
+          RESUME · MOCK INTERVIEW
+        </p>
+        <h1 className="anim-rise-delay font-brand mt-5 max-w-4xl text-[clamp(2.6rem,7.5vw,5.2rem)] leading-[1.05] text-white">
+          先改简历
+          <br />
+          再按它开面
         </h1>
-        <p className="anim-rise-late mt-6 max-w-xl text-base leading-relaxed text-white/70 sm:text-lg">
-          对照你的简历和岗位 JD 出题深挖；也能用真实面经建考纲，再验证你会不会。
+        <p className="anim-rise-late mt-6 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg">
+          对照岗位 JD 把简历改到能经得起追问，再用这份简历做模拟面试。
+          师兄经验、牛客帖、微信整理的面经——都放进面试里当辅助，不单独成一个产品。
         </p>
         <div className="anim-rise-late mt-10 flex flex-wrap items-center gap-4">
           <Link
             href="/interview"
             className="btn-primary rounded-md px-6 py-3 text-sm font-medium tracking-wide"
           >
-            上传简历开始面试
+            开始：改简历并模拟面试
           </Link>
           <Link
-            href="/prepare"
+            href="/interview"
             className="rounded-md border border-white/20 px-6 py-3 text-sm text-white/80 transition hover:border-white/40 hover:text-white"
           >
-            用面经准备
+            先看一遍演示
           </Link>
         </div>
 
-        <div className="anim-rise-late mt-20 grid max-w-3xl gap-8 border-t border-white/10 pt-8 sm:grid-cols-3">
+        <div className="anim-rise-late mt-20 grid max-w-3xl gap-8 border-t border-white/10 pt-8 sm:grid-cols-2">
           {[
-            { n: '01', t: '简历 × JD', d: '重合点、泡沫点、缺口点' },
-            { n: '02', t: '一路深挖', d: '只认新增的具体事实' },
-            { n: '03', t: '面经考纲', d: '真假面经提纯后再练' },
+            {
+              n: '01',
+              t: '改简历',
+              d: '对照 JD 和面经，把虚的收一收、缺口补上、自己讲不清的别写。',
+            },
+            {
+              n: '02',
+              t: '模拟面试',
+              d: '按改完的简历 × 岗位 JD 出题深挖。面经只在这里辅助出题。',
+            },
           ].map((item) => (
             <div key={item.n}>
               <p className="text-xs tracking-[0.18em] text-[#7dbaa8]">{item.n}</p>

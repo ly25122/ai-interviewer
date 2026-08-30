@@ -18,9 +18,9 @@ const serif = Noto_Serif_SC({
 });
 
 export const metadata: Metadata = {
-  title: 'AI面试官 · 用真实面经练到会',
+  title: 'AI面试官 · 改简历，再按它开面',
   description:
-    '把小红书面经提纯成岗位考纲，自评定位，再用追问验证你到底会不会——面向大厂技术实习的 AI 面试官。',
+    '对照岗位 JD 改简历，再用这份简历做模拟面试。面经只在面试里当辅助。面向大厂技术实习。',
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {

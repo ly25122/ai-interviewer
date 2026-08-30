@@ -194,13 +194,43 @@ export interface ReadinessMap {
 
 /* ===================== 简历 × JD 面试 ===================== */
 
+/* ===================== 面试情报 ===================== */
+
+/**
+ * 情报来源分两条路：
+ * 用户主动提供（护城河，很多情报根本不在搜索引擎里）：
+ *   paste — 直接粘贴文本（微信整理、师兄口述）
+ *   file  — 上传 PDF / 截图 / Markdown / TXT
+ *   url   — 用户给的链接，系统抓正文
+ * 系统自动获取：
+ *   web   — 系统检索到的公开面经 / GitHub 仓库 / 牛客 / 博客 / 招聘信息
+ */
+export type IntelSource = 'paste' | 'file' | 'url' | 'web';
+
+/** 用户对该条情报的可信度标注，影响出题权重 */
+export type IntelTrust = 'high' | 'medium' | 'low';
+
+export interface IntelligenceItem {
+  id: string;
+  source: IntelSource;
+  /** 一句话来源说明，如「师兄去年面这个组」「牛客帖」「GitHub 面经仓库」 */
+  label: string;
+  /** 原始链接（url / web 来源时有） */
+  url?: string;
+  /** 抽取出的正文 */
+  content: string;
+  /** 可信度：师兄一手经验 high，公开面经默认 medium，疑似广告 low */
+  trust: IntelTrust;
+}
+
 /**
  * 追问点来源：
  * resume_match — JD 要求与简历经历重合，最该深挖
  * resume_risk — 简历写得很满但可能站不住（数字、职责过宽）
  * jd_gap — JD 明确要求但简历几乎没写，试探真实水平
+ * intel_hit — 面试情报里出现、该岗位/该组真实考过或强调的点
  */
-export type AttackSource = 'resume_match' | 'resume_risk' | 'jd_gap';
+export type AttackSource = 'resume_match' | 'resume_risk' | 'jd_gap' | 'intel_hit';
 
 export interface AttackPoint {
   id: string;
@@ -212,6 +242,8 @@ export interface AttackPoint {
   resumeQuote?: string;
   /** 对应的 JD 要求摘录 */
   jdRequirement?: string;
+  /** 命中的情报摘录（intel_hit 时有），让用户知道这题不是凭空来的 */
+  intelQuote?: string;
 }
 
 export interface InterviewPlan {
@@ -228,4 +260,26 @@ export interface ResumeInterviewSession {
   turns: ProbeTurn[];
   outcome: ProbeOutcome;
   collapsedAtTurn: number | null;
+}
+
+/** 对照 JD / 面试结果给出的简历修改建议 */
+export type ResumeEditKind = 'strengthen' | 'soften' | 'add' | 'cut';
+
+export interface ResumeEdit {
+  id: string;
+  kind: ResumeEditKind;
+  /** 简历里要改的原文；新增条目可省略 */
+  target?: string;
+  suggestion: string;
+  reason: string;
+}
+
+/** 参考答案：面试官想听到的要点 + 一段可照着组织的范例表述 */
+export interface ReferenceAnswer {
+  /** 采分点，逐条 */
+  points: string[];
+  /** 一段范例回答，提醒用户替换成自己的真实经历 */
+  sample: string;
+  /** 常见的答歪 / 减分点 */
+  pitfalls?: string[];
 }

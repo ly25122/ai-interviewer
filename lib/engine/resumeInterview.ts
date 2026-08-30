@@ -1,36 +1,49 @@
 import { chat, parseJson } from '../llm';
-import type { AttackPoint, AttackSource, InterviewPlan } from '../types';
+import type {
+  AttackPoint,
+  AttackSource,
+  InterviewPlan,
+  IntelligenceItem,
+  ReferenceAnswer,
+} from '../types';
 import { MAX_PROBE_TURNS } from './probe';
 
-const PLAN_SYSTEM = `你是一名大厂技术实习招聘的面试官。你会拿到候选人的简历和目标岗位 JD。
+const PLAN_SYSTEM = `你是一名大厂技术实习招聘的面试官。你会拿到三份材料：候选人**简历**、目标岗位 **JD**，以及一批**面试情报**（该岗位/该组真实考过、强调过的东西，可能来自师兄经验、公开面经、招聘信息）。
 
-你的任务不是写鼓励语，而是制定一份**可深挖的面试提纲**：
+你的任务不是写鼓励语，而是制定一份**可深挖、且贴近这个岗位真实考法**的面试提纲：
 找出 4 到 6 个最值得追问的点，按优先级排序。
 
-三类追问点（source）必须严格区分：
-- resume_match：JD 明确要求，且简历里有对应经历——这是主战场，必须深挖「你到底做了什么」
+四类追问点（source）必须严格区分：
+- intel_hit：情报里明确出现、这个岗位/组真实考过或反复强调的点——优先级最高，因为这是"内部消息"。哪怕简历没写，也要问，看候选人有没有准备
+- resume_match：JD 明确要求，且简历里有对应经历——主战场，深挖「你到底做了什么」
 - resume_risk：简历写得很满（夸张数字、职责过宽、技术栈堆砌）但可能站不住——专门打这些泡沫
 - jd_gap：JD 明确要求，简历几乎没写——试探真实水平，允许候选人说不会，但要问清边界
 
+如何用情报：
+- 情报是"这个组会怎么考"的线索，用来校准出题方向和难度；优先把情报里反复出现的考点做成 intel_hit
+- 情报可信度分 high/medium/low，low（疑似广告/泛化）仅作弱参考，不要据此编造具体考题
+- 若没有情报，就只用简历×JD 出题
+
 硬约束：
-1. resumeQuote / jdRequirement 必须尽量逐字摘自输入；找不到就省略该字段，禁止编造
+1. resumeQuote / jdRequirement / intelQuote 必须尽量逐字摘自对应输入；找不到就省略该字段，禁止编造
 2. title 要具体，例如「订单系统 QPS 提升 30% 的测量方法」，不要「项目经历」这种空标题
-3. reason 一句话说清为什么问这个
+3. reason 一句话说清为什么问这个（intel_hit 要点明"情报显示这个组考过/强调过"）
 4. 优先技术实习常见深挖：项目数字、设计取舍、故障排查、与 JD 技能栈对齐处
 
 只输出 JSON：
 {
   "roleGuess": "推断的目标岗位",
-  "companyGuess": "若 JD 能看出公司则填写，否则省略",
+  "companyGuess": "若能看出公司则填写，否则省略",
   "opening": "面试开场白，一两句，克制、像真人面试官",
   "points": [
     {
       "id": "p1",
       "title": "具体追问点标题",
-      "source": "resume_match | resume_risk | jd_gap",
+      "source": "intel_hit | resume_match | resume_risk | jd_gap",
       "reason": "为什么问",
       "resumeQuote": "简历原文片段，可省略",
-      "jdRequirement": "JD 原文片段，可省略"
+      "jdRequirement": "JD 原文片段，可省略",
+      "intelQuote": "情报原文片段，intel_hit 时尽量给，可省略"
     }
   ]
 }`;
@@ -69,6 +82,7 @@ interface RawPlan {
     reason?: string;
     resumeQuote?: string;
     jdRequirement?: string;
+    intelQuote?: string;
   }>;
 }
 
@@ -77,12 +91,37 @@ interface RawStep {
   nextQuestion?: string;
 }
 
-const SOURCES: AttackSource[] = ['resume_match', 'resume_risk', 'jd_gap'];
+const SOURCES: AttackSource[] = ['resume_match', 'resume_risk', 'jd_gap', 'intel_hit'];
+
+const TRUST_LABEL: Record<string, string> = {
+  high: '高可信·一手',
+  medium: '中等·公开',
+  low: '存疑·可能含广告',
+};
 
 function clip(text: string, max: number): string {
   const t = text.trim();
   if (t.length <= max) return t;
   return `${t.slice(0, max)}\n…（已截断）`;
+}
+
+/** 把多条情报拼成给模型看的文本，同时返回可用于引用核验的语料 */
+function buildIntel(items: IntelligenceItem[] | undefined): {
+  prompt: string;
+  corpus: string;
+} {
+  const list = (items ?? []).filter((it) => it?.content?.trim());
+  if (list.length === 0) {
+    return { prompt: '（本次没有额外情报，仅凭简历与 JD 出题）', corpus: '' };
+  }
+  const blocks = list.map((it, i) => {
+    const trust = TRUST_LABEL[it.trust] ?? it.trust;
+    const head = `情报${i + 1}｜${it.label || '未命名'}｜可信度：${trust}${
+      it.url ? `｜来源：${it.url}` : ''
+    }`;
+    return `${head}\n${clip(it.content, 3000)}`;
+  });
+  return { prompt: blocks.join('\n\n'), corpus: list.map((it) => it.content).join('\n') };
 }
 
 /** 引用必须能在原文里找到；找不到就丢掉，防止模型编造简历内容 */
@@ -98,16 +137,21 @@ function keepIfPresent(quote: string | undefined, haystack: string): string | un
   return undefined;
 }
 
-export async function planResumeInterview(resume: string, jd: string): Promise<InterviewPlan> {
+export async function planResumeInterview(
+  resume: string,
+  jd: string,
+  intelligence?: IntelligenceItem[],
+): Promise<InterviewPlan> {
   const resumeText = clip(resume, 12000);
   const jdText = clip(jd, 8000);
+  const intel = buildIntel(intelligence);
 
   const raw = await chat({
     messages: [
       { role: 'system', content: PLAN_SYSTEM },
       {
         role: 'user',
-        content: `【简历】\n${resumeText}\n\n【岗位 JD】\n${jdText}`,
+        content: `【简历】\n${resumeText}\n\n【岗位 JD】\n${jdText}\n\n【面试情报】\n${intel.prompt}`,
       },
     ],
     temperature: 0.2,
@@ -130,6 +174,7 @@ export async function planResumeInterview(resume: string, jd: string): Promise<I
         reason: p.reason?.trim() || '与目标岗位高度相关',
         resumeQuote: keepIfPresent(p.resumeQuote, resumeText),
         jdRequirement: keepIfPresent(p.jdRequirement, jdText),
+        intelQuote: keepIfPresent(p.intelQuote, intel.corpus),
       };
     });
 
@@ -153,6 +198,7 @@ export interface ResumeInterviewStepInput {
   jd: string;
   point: AttackPoint;
   turns: Array<{ question: string; answer: string }>;
+  intelligence?: IntelligenceItem[];
 }
 
 export interface ResumeInterviewStepResult {
@@ -169,14 +215,18 @@ export async function resumeInterviewStep(
   const jdText = clip(input.jd, 5000);
   const point = input.point;
 
+  const intel = buildIntel(input.intelligence);
+
   const context = [
     `【当前追问点】${point.title}`,
     `【类型】${point.source}`,
     `【为何问】${point.reason}`,
     point.resumeQuote ? `【简历原文】${point.resumeQuote}` : '',
     point.jdRequirement ? `【JD 要求】${point.jdRequirement}` : '',
+    point.intelQuote ? `【命中情报】${point.intelQuote}` : '',
     `【简历全文（节选）】\n${resumeText}`,
     `【JD 全文（节选）】\n${jdText}`,
+    `【面试情报（可作追问方向参考，但仍以候选人真实经历为准）】\n${intel.prompt}`,
     isFirst
       ? '【当前状态】尚未开始，请给出开场问题'
       : `【已进行的问答】\n${input.turns
@@ -229,5 +279,93 @@ export async function resumeInterviewStep(
     outcome: 'continue',
     nextQuestion:
       parsed.nextQuestion ?? `关于「${point.title}」，再往下说一层：边界条件是什么？`,
+  };
+}
+
+/* ===================== 参考答案 ===================== */
+
+const REFERENCE_SYSTEM = `你是一名资深技术面试教练。候选人卡在某个面试问题上，想知道"面试官到底想听到什么"。
+
+请给出一份参考答案，服务于"看完能自己组织出来"，而不是背诵。要求：
+1. points：3 到 5 条采分点，是这道题的关键结构与必答要素，每条一句话，具体、可操作
+2. sample：一段范例回答（120~220 字），像候选人在面试里口述，展示怎么把采分点串起来
+3. pitfalls：1 到 3 条常见减分点 / 容易答歪的地方
+
+硬约束：
+- 参考答案要贴合"当前追问点"和"最后被问到的问题"，不要泛泛而谈
+- 若涉及候选人的项目数字/经历，用占位说法（如"这里替换成你项目里的真实数字"），严禁替候选人编造具体经历冒充事实
+- 技术表述必须正确，不确定就给方向而非编造细节
+
+只输出 JSON：
+{
+  "points": ["采分点1", "采分点2"],
+  "sample": "范例回答",
+  "pitfalls": ["常见减分点"]
+}`;
+
+export interface ReferenceInput {
+  resume: string;
+  jd: string;
+  point: AttackPoint;
+  /** 当前被问到的问题；没有则针对追问点整体 */
+  question?: string;
+  turns?: Array<{ question: string; answer: string }>;
+  intelligence?: IntelligenceItem[];
+}
+
+export async function referenceAnswer(input: ReferenceInput): Promise<ReferenceAnswer> {
+  const point = input.point;
+  const intel = buildIntel(input.intelligence);
+  const history = (input.turns ?? [])
+    .map((t, i) => `第${i + 1}轮\n面试官：${t.question}\n候选人：${t.answer}`)
+    .join('\n\n');
+
+  const context = [
+    `【追问点】${point.title}`,
+    `【为何问】${point.reason}`,
+    point.resumeQuote ? `【简历原文】${point.resumeQuote}` : '',
+    point.jdRequirement ? `【JD 要求】${point.jdRequirement}` : '',
+    point.intelQuote ? `【命中情报】${point.intelQuote}` : '',
+    input.question ? `【当前问题】${input.question}` : '',
+    history ? `【已进行的问答】\n${history}` : '',
+    `【岗位 JD（节选）】\n${clip(input.jd, 3000)}`,
+    `【面试情报（可选参考）】\n${intel.prompt}`,
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+
+  const raw = await chat({
+    messages: [
+      { role: 'system', content: REFERENCE_SYSTEM },
+      { role: 'user', content: context },
+    ],
+    temperature: 0.3,
+    json: true,
+    maxTokens: 900,
+  });
+
+  const parsed = parseJson<{
+    points?: string[];
+    sample?: string;
+    pitfalls?: string[];
+  }>(raw);
+
+  const points = (parsed.points ?? [])
+    .map((p) => (typeof p === 'string' ? p.trim() : ''))
+    .filter(Boolean)
+    .slice(0, 6);
+  const pitfalls = (parsed.pitfalls ?? [])
+    .map((p) => (typeof p === 'string' ? p.trim() : ''))
+    .filter(Boolean)
+    .slice(0, 4);
+
+  if (points.length === 0 && !parsed.sample?.trim()) {
+    throw new Error('未能生成参考答案，请稍后重试');
+  }
+
+  return {
+    points,
+    sample: parsed.sample?.trim() ?? '',
+    pitfalls: pitfalls.length > 0 ? pitfalls : undefined,
   };
 }
