@@ -112,10 +112,13 @@ export default function AnalyzePage() {
             AI面试官
           </Link>
           <nav className="flex items-center gap-4 text-sm text-[var(--muted)]">
-            <span className="text-[var(--ink)]">面经甄别</span>
+            <Link href="/interview" className="transition hover:text-[var(--ink)]">
+              简历面试
+            </Link>
             <Link href="/prepare" className="transition hover:text-[var(--ink)]">
               面试准备
             </Link>
+            <span className="text-[var(--ink)]">面经甄别</span>
           </nav>
         </div>
       </header>

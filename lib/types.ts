@@ -191,3 +191,41 @@ export interface ReadinessMap {
   gapCount: number;
   nextThree: NextAction[];
 }
+
+/* ===================== 简历 × JD 面试 ===================== */
+
+/**
+ * 攻击点来源：
+ * resume_match — JD 要求与简历经历重合，最该深挖
+ * resume_risk — 简历写得很满但可能站不住（数字、职责过宽）
+ * jd_gap — JD 明确要求但简历几乎没写，试探真实水平
+ */
+export type AttackSource = 'resume_match' | 'resume_risk' | 'jd_gap';
+
+export interface AttackPoint {
+  id: string;
+  title: string;
+  source: AttackSource;
+  /** 为什么要问这个：给用户看，也给追问引擎当上下文 */
+  reason: string;
+  /** 简历原文摘录，便于用户核验「问的是不是我写的」 */
+  resumeQuote?: string;
+  /** 对应的 JD 要求摘录 */
+  jdRequirement?: string;
+}
+
+export interface InterviewPlan {
+  roleGuess: string;
+  companyGuess?: string;
+  /** 面试开场一句话，像真实面试官 */
+  opening: string;
+  points: AttackPoint[];
+  generatedAt: string;
+}
+
+export interface ResumeInterviewSession {
+  pointId: string;
+  turns: ProbeTurn[];
+  outcome: ProbeOutcome;
+  collapsedAtTurn: number | null;
+}

@@ -83,23 +83,31 @@ export default function PreparePage() {
             </Link>
             <p className="hidden text-sm text-[var(--muted)] sm:block">用真实面经练到会</p>
           </div>
-          <nav className="flex gap-1 text-xs">
-            {(['input', 'rating', 'map'] as Step[]).map((s, i) => (
-              <button
-                key={s}
-                type="button"
-                disabled={s !== 'input' && !state.syllabus}
-                onClick={() => setStep(s)}
-                className={`rounded-md px-3 py-1.5 transition disabled:cursor-not-allowed disabled:opacity-30 ${
-                  step === s
-                    ? 'bg-[var(--ink)] text-[var(--paper)]'
-                    : 'text-[var(--muted)] hover:bg-black/5 hover:text-[var(--ink)]'
-                }`}
-              >
-                {i + 1}. {STEP_LABEL[s]}
-              </button>
-            ))}
-          </nav>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/interview"
+              className="text-xs text-[var(--muted)] transition hover:text-[var(--ink)]"
+            >
+              简历面试
+            </Link>
+            <nav className="flex gap-1 text-xs">
+              {(['input', 'rating', 'map'] as Step[]).map((s, i) => (
+                <button
+                  key={s}
+                  type="button"
+                  disabled={s !== 'input' && !state.syllabus}
+                  onClick={() => setStep(s)}
+                  className={`rounded-md px-3 py-1.5 transition disabled:cursor-not-allowed disabled:opacity-30 ${
+                    step === s
+                      ? 'bg-[var(--ink)] text-[var(--paper)]'
+                      : 'text-[var(--muted)] hover:bg-black/5 hover:text-[var(--ink)]'
+                  }`}
+                >
+                  {i + 1}. {STEP_LABEL[s]}
+                </button>
+              ))}
+            </nav>
+          </div>
         </div>
       </header>
 
