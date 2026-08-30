@@ -28,12 +28,16 @@ const SOURCE_META: Record<AttackSource, { label: string; tone: string }> = {
   },
 };
 
-async function readTextFile(file: File): Promise<string> {
-  const name = file.name.toLowerCase();
-  if (name.endsWith('.pdf') || name.endsWith('.doc') || name.endsWith('.docx')) {
-    throw new Error('暂不支持解析该格式，请复制正文粘贴，或上传 .txt / .md');
+async function parseUpload(file: File): Promise<string> {
+  const body = new FormData();
+  body.append('file', file);
+  const res = await fetch('/api/interview/parse', { method: 'POST', body });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error ?? '解析失败');
+  if (typeof data.text !== 'string' || !data.text.trim()) {
+    throw new Error('解析结果为空');
   }
-  return file.text();
+  return data.text as string;
 }
 
 export default function InterviewPage() {
@@ -42,6 +46,7 @@ export default function InterviewPage() {
   const [phase, setPhase] = useState<Phase>('input');
   const [plan, setPlan] = useState<InterviewPlan | null>(null);
   const [loading, setLoading] = useState(false);
+  const [parsing, setParsing] = useState<'resume' | 'jd' | null>(null);
   const [error, setError] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const [sessions, setSessions] = useState<Record<string, ResumeInterviewSession>>({});
@@ -61,14 +66,16 @@ export default function InterviewPage() {
   async function onFile(which: 'resume' | 'jd', e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setParsing(which);
+    setError('');
     try {
-      const text = await readTextFile(file);
+      const text = await parseUpload(file);
       if (which === 'resume') setResume(text);
       else setJd(text);
-      setError('');
     } catch (err) {
       setError(err instanceof Error ? err.message : '读取文件失败');
     } finally {
+      setParsing(null);
       e.target.value = '';
     }
   }
@@ -137,6 +144,7 @@ export default function InterviewPage() {
             resume={resume}
             jd={jd}
             loading={loading}
+            parsing={parsing}
             error={error}
             onResume={setResume}
             onJd={setJd}
@@ -200,6 +208,7 @@ function InputPhase({
   resume,
   jd,
   loading,
+  parsing,
   error,
   onResume,
   onJd,
@@ -210,6 +219,7 @@ function InputPhase({
   resume: string;
   jd: string;
   loading: boolean;
+  parsing: 'resume' | 'jd' | null;
   error: string;
   onResume: (v: string) => void;
   onJd: (v: string) => void;
@@ -225,8 +235,8 @@ function InputPhase({
           上传简历和岗位 JD
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] sm:text-base">
-          AI 面试官会对照两者找出最该深挖的点：JD 与简历重合处、简历里可能站不住的数字、
-          以及 JD 要求但你几乎没写的缺口——然后一路往下追。
+          支持 PDF、Word（.docx）、TXT、MD，上传后自动抽出正文。也可直接粘贴。
+          AI 面试官会对照两者找出重合点、泡沫点和缺口点，再一路往下追。
         </p>
         <button
           type="button"
@@ -241,16 +251,18 @@ function InputPhase({
         <TextBlock
           label="你的简历"
           value={resume}
+          parsing={parsing === 'resume'}
           onChange={onResume}
           onFile={(e) => onFile('resume', e)}
-          placeholder="粘贴简历全文，或上传 .txt / .md"
+          placeholder="粘贴简历，或上传 PDF / DOCX / TXT"
         />
         <TextBlock
           label="目标岗位 JD"
           value={jd}
+          parsing={parsing === 'jd'}
           onChange={onJd}
           onFile={(e) => onFile('jd', e)}
-          placeholder="粘贴岗位描述全文，或上传 .txt / .md"
+          placeholder="粘贴岗位 JD，或上传 PDF / DOCX / TXT"
         />
       </div>
 
@@ -258,7 +270,12 @@ function InputPhase({
         <button
           type="button"
           onClick={onSubmit}
-          disabled={loading || resume.trim().length < 80 || jd.trim().length < 40}
+          disabled={
+            loading ||
+            !!parsing ||
+            resume.trim().length < 80 ||
+            jd.trim().length < 40
+          }
           className="btn-primary rounded-md px-5 py-2.5 text-sm font-medium"
         >
           {loading ? '正在对照简历与 JD 出题…' : '生成面试攻击计划'}
@@ -280,12 +297,14 @@ function InputPhase({
 function TextBlock({
   label,
   value,
+  parsing,
   onChange,
   onFile,
   placeholder,
 }: {
   label: string;
   value: string;
+  parsing: boolean;
   onChange: (v: string) => void;
   onFile: (e: ChangeEvent<HTMLInputElement>) => void;
   placeholder: string;
@@ -294,9 +313,19 @@ function TextBlock({
     <div>
       <div className="mb-2 flex items-center justify-between gap-2">
         <h2 className="text-sm font-medium">{label}</h2>
-        <label className="cursor-pointer text-xs text-[var(--accent)] hover:underline">
-          上传文件
-          <input type="file" accept=".txt,.md,.text,text/plain" className="hidden" onChange={onFile} />
+        <label
+          className={`cursor-pointer text-xs ${
+            parsing ? 'text-[var(--muted)]' : 'text-[var(--accent)] hover:underline'
+          }`}
+        >
+          {parsing ? '正在解析…' : '上传 PDF / Word'}
+          <input
+            type="file"
+            accept=".pdf,.docx,.txt,.md,.markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+            className="hidden"
+            disabled={parsing}
+            onChange={onFile}
+          />
         </label>
       </div>
       <textarea
