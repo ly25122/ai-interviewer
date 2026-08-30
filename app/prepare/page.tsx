@@ -10,7 +10,15 @@ import {
   setLocalState,
   subscribe,
 } from '@/lib/storage';
-import type { AnalyzeInput, SelfRating, Syllabus, TopicStatus } from '@/lib/types';
+import type {
+  AnalyzeInput,
+  ProbeSession,
+  ProbeTurn,
+  SelfRating,
+  Syllabus,
+  SyllabusTopic,
+  TopicStatus,
+} from '@/lib/types';
 
 type Step = 'input' | 'rating' | 'map';
 
@@ -94,7 +102,16 @@ export default function PreparePage() {
       )}
 
       {step === 'map' && map && state.syllabus && (
-        <MapStep syllabus={state.syllabus} map={map} />
+        <MapStep
+          syllabus={state.syllabus}
+          map={map}
+          onProbeFinish={(session) =>
+            setLocalState((prev) => ({
+              ...prev,
+              probes: { ...prev.probes, [session.topicId]: session },
+            }))
+          }
+        />
       )}
     </main>
   );
@@ -279,10 +296,19 @@ function RatingStep({
 function MapStep({
   syllabus,
   map,
+  onProbeFinish,
 }: {
   syllabus: Syllabus;
   map: ReturnType<typeof buildReadinessMap>;
+  onProbeFinish: (session: ProbeSession) => void;
 }) {
+  const [probingTopic, setProbingTopic] = useState<SyllabusTopic | null>(null);
+
+  /** 只验证「自评说会」的考点。说不会的没什么可验证的，说模糊的用户自己已经知道了 */
+  const claimed = syllabus.topics.filter(
+    (t) => map.cells.find((c) => c.topicId === t.id)?.status === 'claimed',
+  );
+
   const byCategory = useMemo(() => {
     const groups = new Map<string, typeof map.cells>();
     for (const cell of map.cells) {
@@ -339,6 +365,44 @@ function MapStep({
         </div>
       </div>
 
+      {claimed.length > 0 && (
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <h2 className="text-sm font-semibold">验证一下你说会的考点</h2>
+          <p className="mt-1 text-xs leading-relaxed text-slate-400">
+            自评会不等于真的会。每个考点最多追问三轮，只看你能不能持续给出新的具体事实，
+            不评价你答得好不好。
+          </p>
+          {probingTopic ? (
+            <ProbeDialog
+              topic={probingTopic}
+              onCancel={() => setProbingTopic(null)}
+              onFinish={(session) => {
+                onProbeFinish(session);
+                setProbingTopic(null);
+              }}
+            />
+          ) : (
+            <ul className="mt-3 space-y-1.5">
+              {claimed.map((topic) => (
+                <li
+                  key={topic.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2"
+                >
+                  <span className="min-w-0 flex-1 truncate text-sm">{topic.title}</span>
+                  <button
+                    type="button"
+                    onClick={() => setProbingTopic(topic)}
+                    className="shrink-0 rounded-md border border-slate-300 px-2.5 py-1 text-xs text-slate-700 transition hover:border-slate-500"
+                  >
+                    验证
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       {map.nextThree.length > 0 && (
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="text-sm font-semibold">接下来只做这三件事</h2>
@@ -360,6 +424,153 @@ function MapStep({
           </ol>
         </div>
       )}
+    </div>
+  );
+}
+
+function ProbeDialog({
+  topic,
+  onCancel,
+  onFinish,
+}: {
+  topic: SyllabusTopic;
+  onCancel: () => void;
+  onFinish: (session: ProbeSession) => void;
+}) {
+  const [turns, setTurns] = useState<ProbeTurn[]>([]);
+  const [question, setQuestion] = useState<string | null>(null);
+  const [answer, setAnswer] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  async function callProbe(history: Array<{ question: string; answer: string }>) {
+    const res = await fetch('/api/probe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topicTitle: topic.title,
+        variants: topic.variants,
+        turns: history,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error ?? '追问失败');
+    return data as {
+      judgement: { hasNewFact: boolean; reason: string } | null;
+      outcome: 'continue' | 'verified' | 'collapsed';
+      nextQuestion?: string;
+    };
+  }
+
+  async function start() {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await callProbe([]);
+      setQuestion(data.nextQuestion ?? null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '追问失败');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function submit() {
+    if (!question || !answer.trim() || loading) return;
+    setLoading(true);
+    setError('');
+
+    const history = [
+      ...turns.map((t) => ({ question: t.question, answer: t.answer })),
+      { question, answer: answer.trim() },
+    ];
+
+    try {
+      const data = await callProbe(history);
+      const judged: ProbeTurn = {
+        question,
+        answer: answer.trim(),
+        hasNewFact: data.judgement?.hasNewFact ?? false,
+        judgement: data.judgement?.reason ?? '',
+      };
+      const nextTurns = [...turns, judged];
+
+      if (data.outcome === 'continue' && data.nextQuestion) {
+        setTurns(nextTurns);
+        setQuestion(data.nextQuestion);
+        setAnswer('');
+      } else {
+        onFinish({
+          topicId: topic.id,
+          turns: nextTurns,
+          outcome: data.outcome === 'verified' ? 'verified' : 'collapsed',
+          collapsedAtTurn: data.outcome === 'collapsed' ? nextTurns.length : null,
+        });
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '追问失败');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="mt-3 rounded-lg border border-slate-300 bg-slate-50 p-3.5">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm font-medium">{topic.title}</p>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="shrink-0 text-xs text-slate-400 hover:text-slate-700"
+        >
+          退出
+        </button>
+      </div>
+
+      {turns.map((turn, i) => (
+        <div key={i} className="mt-3 space-y-1 border-l-2 border-slate-200 pl-3">
+          <p className="text-xs text-slate-500">面试官：{turn.question}</p>
+          <p className="text-xs text-slate-700">你：{turn.answer}</p>
+          <p className="text-[11px] text-emerald-600">{turn.judgement}</p>
+        </div>
+      ))}
+
+      {!question && !loading && (
+        <button
+          type="button"
+          onClick={start}
+          className="mt-3 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white"
+        >
+          开始追问
+        </button>
+      )}
+
+      {question && (
+        <div className="mt-3 space-y-2">
+          <p className="text-sm">
+            <span className="text-slate-400">第 {turns.length + 1} 轮 · 面试官：</span>
+            {question}
+          </p>
+          <textarea
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            placeholder="说说看。想不起来就直说，这里不会有人评价你"
+            className="h-24 w-full resize-none rounded-lg border border-slate-300 bg-white p-2.5 text-sm outline-none focus:border-slate-500"
+          />
+          <button
+            type="button"
+            onClick={submit}
+            disabled={loading || !answer.trim()}
+            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:bg-slate-300"
+          >
+            {loading ? '判定中' : '提交'}
+          </button>
+        </div>
+      )}
+
+      {loading && !question && <p className="mt-3 text-xs text-slate-400">正在准备问题</p>}
+
+      {error && <p className="mt-2 text-xs text-rose-600">{error}</p>}
     </div>
   );
 }
