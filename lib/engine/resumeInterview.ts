@@ -292,9 +292,11 @@ const REFERENCE_SYSTEM = `你是一名资深技术面试教练。候选人卡在
 3. pitfalls：1 到 3 条常见减分点 / 容易答歪的地方
 
 硬约束：
-- 参考答案要贴合"当前追问点"和"最后被问到的问题"，不要泛泛而谈
+- 必须紧扣【当前问题】作答。当前问题是什么，参考答案就必须回答什么，禁止换成另一道题的通用答案
+- 若没有单独的当前问题，则紧扣【追问点】标题
 - 若涉及候选人的项目数字/经历，用占位说法（如"这里替换成你项目里的真实数字"），严禁替候选人编造具体经历冒充事实
 - 技术表述必须正确，不确定就给方向而非编造细节
+- sample 里要能看出这是在回答哪一道题，不要写成可以套到任何题上的空话
 
 只输出 JSON：
 {
@@ -320,14 +322,22 @@ export async function referenceAnswer(input: ReferenceInput): Promise<ReferenceA
     .map((t, i) => `第${i + 1}轮\n面试官：${t.question}\n候选人：${t.answer}`)
     .join('\n\n');
 
+  const currentQuestion =
+    input.question?.trim() ||
+    (input.turns && input.turns.length > 0
+      ? input.turns[input.turns.length - 1]?.question
+      : undefined);
+
   const context = [
+    currentQuestion
+      ? `【当前必须回答的问题】${currentQuestion}\n（参考答案必须直接回答这句话，不能换成别的题）`
+      : `【当前必须回答的问题】围绕追问点「${point.title}」给出面试官想听到的答法`,
     `【追问点】${point.title}`,
     `【为何问】${point.reason}`,
     point.resumeQuote ? `【简历原文】${point.resumeQuote}` : '',
     point.jdRequirement ? `【JD 要求】${point.jdRequirement}` : '',
     point.intelQuote ? `【命中情报】${point.intelQuote}` : '',
-    input.question ? `【当前问题】${input.question}` : '',
-    history ? `【已进行的问答】\n${history}` : '',
+    history ? `【已进行的问答，仅作上下文，不要回答已经问过的旧问题】\n${history}` : '',
     `【岗位 JD（节选）】\n${clip(input.jd, 3000)}`,
     `【面试情报（可选参考）】\n${intel.prompt}`,
   ]

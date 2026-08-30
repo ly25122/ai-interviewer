@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import sample from '@/lib/interview-sample.json';
 import {
@@ -11,8 +11,19 @@ import {
   demoSessions,
   demoReference,
   demoEdits,
+  demoProgress,
 } from '@/lib/interview-demo';
 import { CoverageRing, JourneyBar, Meter, StackedMeter } from '@/app/components/ProgressViz';
+import { ProgressPanel } from '@/app/components/ProgressPanel';
+import {
+  addPracticeRecord,
+  getProgressServerSnapshot,
+  getProgressSnapshot,
+  scoreLabel,
+  scoreSession,
+  subscribeProgress,
+  toRecord,
+} from '@/lib/progress';
 import type {
   AttackPoint,
   AttackSource,
@@ -79,6 +90,12 @@ export default function InterviewPage() {
   const [sessions, setSessions] = useState<Record<string, ResumeInterviewSession>>({});
   const [intel, setIntel] = useState<IntelligenceItem[]>([]);
   const [demo, setDemo] = useState(false);
+  const savedProgress = useSyncExternalStore(
+    subscribeProgress,
+    getProgressSnapshot,
+    getProgressServerSnapshot,
+  );
+  const progressRecords = demo ? demoProgress : savedProgress;
 
   function loadDemo() {
     setResume(demoResume);
@@ -157,6 +174,10 @@ export default function InterviewPage() {
   function finishPoint(session: ResumeInterviewSession) {
     const nextSessions = { ...sessions, [session.pointId]: session };
     setSessions(nextSessions);
+    if (!demo) {
+      const title = plan?.points.find((p) => p.id === session.pointId)?.title ?? session.pointId;
+      addPracticeRecord(toRecord(title, session));
+    }
     if (!plan) return;
     const nextIdx = plan.points.findIndex(
       (p, i) => i > activeIndex && !nextSessions[p.id],
@@ -182,8 +203,12 @@ export default function InterviewPage() {
       </header>
 
       <div className="mx-auto w-full max-w-5xl px-5 py-8">
-        <div className="surface mb-8 rounded-lg px-4 py-4 sm:px-6">
+        <div className="surface mb-6 rounded-lg px-4 py-4 sm:px-6">
           <JourneyBar steps={JOURNEY} current={phase} />
+        </div>
+
+        <div className="mb-8">
+          <ProgressPanel records={progressRecords} compact={phase === 'live'} />
         </div>
 
         {demo && (
@@ -956,10 +981,20 @@ function ReferenceAnswerBlock({
   turns?: Array<{ question: string; answer: string }>;
   preset?: ReferenceAnswerData;
 }) {
+  const topicKey = `${point.id}::${question ?? ''}::${preset?.sample ?? ''}`;
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<ReferenceAnswerData | null>(null);
+  const [loadedKey, setLoadedKey] = useState('');
   const [error, setError] = useState('');
+
+  if (loadedKey !== topicKey && (data || open || error)) {
+    setLoadedKey(topicKey);
+    setData(null);
+    setOpen(false);
+    setError('');
+    setLoading(false);
+  }
 
   async function toggle() {
     if (open) {
@@ -967,11 +1002,12 @@ function ReferenceAnswerBlock({
       return;
     }
     setOpen(true);
-    if (data || loading) return;
     if (preset) {
       setData(preset);
+      setLoadedKey(topicKey);
       return;
     }
+    if (data && loadedKey === topicKey) return;
     setLoading(true);
     setError('');
     try {
@@ -983,6 +1019,7 @@ function ReferenceAnswerBlock({
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error ?? '生成失败');
       setData(json.reference as ReferenceAnswerData);
+      setLoadedKey(topicKey);
     } catch (e) {
       setError(e instanceof Error ? e.message : '生成参考答案失败');
     } finally {
@@ -1401,6 +1438,8 @@ function LivePhase({
                   }`}
                 >
                   {done.outcome === 'verified' ? '经得起追问' : '经不起追问'}
+                  {' · '}
+                  {scoreSession(done)} 分
                 </span>
               )}
             </button>
@@ -1425,6 +1464,9 @@ function LivePhase({
             <p className="mt-2 text-sm text-[var(--muted)]">
               结果：
               {sessions[point.id].outcome === 'verified' ? '经得起追问' : '经不起追问'}
+              {' · '}
+              {scoreSession(sessions[point.id])} 分
+              （{scoreLabel(scoreSession(sessions[point.id])).text}）
             </p>
             <div className="mt-4 space-y-3">
               {sessions[point.id].turns.map((t, i) => (
@@ -1435,10 +1477,12 @@ function LivePhase({
               ))}
             </div>
             <ReferenceAnswerBlock
+              key={point.id}
               point={point}
               resume={resume}
               jd={jd}
               intel={intel}
+              question={sessions[point.id].turns.at(-1)?.question}
               turns={sessions[point.id].turns.map((t) => ({
                 question: t.question,
                 answer: t.answer,
@@ -1612,6 +1656,7 @@ function PointProbe({
             {loading ? '判定中' : '提交'}
           </button>
           <ReferenceAnswerBlock
+            key={`${point.id}-${question}`}
             point={point}
             resume={resume}
             jd={jd}
@@ -1690,7 +1735,7 @@ function DonePhase({
               { value: summary.collapsed, tone: 'warn', title: '经不起' },
               { value: Math.max(0, summary.total - summary.done), tone: 'muted', title: '未问' },
             ]}
-            hint="绿色不是分数，是「说出了新的具体事实」。"
+            hint="绿色是经得起追问的题；分数看上面的进步模块。"
           />
         </div>
       </div>
@@ -1713,7 +1758,7 @@ function DonePhase({
                 <p className="text-xs text-[var(--muted)]">{SOURCE_META[p.source].label}</p>
               </div>
               <span
-                className={`text-xs ${
+                className={`text-xs tabular-nums ${
                   !s
                     ? 'text-[var(--muted)]'
                     : s.outcome === 'verified'
@@ -1721,7 +1766,11 @@ function DonePhase({
                       : 'text-[var(--warn)]'
                 }`}
               >
-                {!s ? '未开始' : s.outcome === 'verified' ? '经得起追问' : `第 ${s.collapsedAtTurn} 轮崩掉`}
+                {!s
+                  ? '未开始'
+                  : `${scoreSession(s)} 分 · ${
+                      s.outcome === 'verified' ? '经得起追问' : `第 ${s.collapsedAtTurn} 轮崩掉`
+                    }`}
               </span>
             </li>
           );

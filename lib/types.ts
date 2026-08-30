@@ -262,6 +262,19 @@ export interface ResumeInterviewSession {
   collapsedAtTurn: number | null;
 }
 
+/** 一次追问点的可量化记录，用来看今天练了多少、答得怎样、有没有进步 */
+export interface PracticeRecord {
+  id: string;
+  at: string;
+  pointTitle: string;
+  outcome: ProbeOutcome;
+  collapsedAtTurn: number | null;
+  factTurns: number;
+  totalTurns: number;
+  /** 0–100，由信息增量和是否撑住追问算出，不是模型主观打分 */
+  score: number;
+}
+
 /** 对照 JD / 面试结果给出的简历修改建议 */
 export type ResumeEditKind = 'strengthen' | 'soften' | 'add' | 'cut';
 

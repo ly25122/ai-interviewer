@@ -1,10 +1,12 @@
 import type {
   InterviewPlan,
   IntelligenceItem,
+  PracticeRecord,
   ReferenceAnswer,
   ResumeEdit,
   ResumeInterviewSession,
 } from '@/lib/types';
+import { toRecord } from '@/lib/progress';
 import sample from '@/lib/interview-sample.json';
 
 /**
@@ -368,4 +370,91 @@ export const demoEdits: ResumeEdit[] = [
     suggestion: '删掉这句。JD 不考、简历也没有对应项目，面试官随口一问就会露怯。',
     reason: '技能栏里的「了解」最容易被追，又不是这个岗位的主战场。',
   },
+];
+
+function daysAgoIso(days: number, hour: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  d.setHours(hour, 8, 0, 0);
+  return d.toISOString();
+}
+
+/** 演示用的 7 天练习记录：分数慢慢抬上来，今天是这次模拟面试 */
+export const demoProgress: PracticeRecord[] = [
+  {
+    id: 'hist-6a',
+    at: daysAgoIso(6, 21),
+    pointTitle: 'HashMap 扩容机制',
+    outcome: 'collapsed',
+    collapsedAtTurn: 1,
+    factTurns: 0,
+    totalTurns: 1,
+    score: 15,
+  },
+  {
+    id: 'hist-5a',
+    at: daysAgoIso(5, 20),
+    pointTitle: 'Redis 缓存击穿',
+    outcome: 'collapsed',
+    collapsedAtTurn: 2,
+    factTurns: 1,
+    totalTurns: 2,
+    score: 35,
+  },
+  {
+    id: 'hist-4a',
+    at: daysAgoIso(4, 19),
+    pointTitle: 'MySQL 索引失效场景',
+    outcome: 'collapsed',
+    collapsedAtTurn: 2,
+    factTurns: 1,
+    totalTurns: 2,
+    score: 45,
+  },
+  {
+    id: 'hist-3a',
+    at: daysAgoIso(3, 21),
+    pointTitle: 'Kafka 消费幂等',
+    outcome: 'verified',
+    collapsedAtTurn: null,
+    factTurns: 1,
+    totalTurns: 2,
+    score: 85,
+  },
+  {
+    id: 'hist-3b',
+    at: daysAgoIso(3, 21),
+    pointTitle: 'TCP 三次握手',
+    outcome: 'collapsed',
+    collapsedAtTurn: 1,
+    factTurns: 0,
+    totalTurns: 1,
+    score: 20,
+  },
+  {
+    id: 'hist-1a',
+    at: daysAgoIso(1, 20),
+    pointTitle: 'Sentinel 限流配置',
+    outcome: 'verified',
+    collapsedAtTurn: null,
+    factTurns: 2,
+    totalTurns: 2,
+    score: 100,
+  },
+  {
+    id: 'hist-1b',
+    at: daysAgoIso(1, 20),
+    pointTitle: '分库分表分片键',
+    outcome: 'collapsed',
+    collapsedAtTurn: 2,
+    factTurns: 1,
+    totalTurns: 2,
+    score: 35,
+  },
+  ...Object.values(demoSessions).map((s) =>
+    toRecord(
+      demoPlan.points.find((p) => p.id === s.pointId)?.title ?? s.pointId,
+      s,
+    ),
+  ),
 ];

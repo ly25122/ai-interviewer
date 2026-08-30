@@ -213,3 +213,45 @@ export function StackedMeter({
     </div>
   );
 }
+
+export function WeekBars({
+  days,
+}: {
+  days: Array<{ date: string; count: number; avgScore: number }>;
+}) {
+  const max = Math.max(100, ...days.map((d) => d.avgScore));
+  const weekday = ['日', '一', '二', '三', '四', '五', '六'];
+
+  return (
+    <div>
+      <p className="text-xs text-[var(--muted)]">近 7 天平均分</p>
+      <div className="mt-3 flex items-end gap-2">
+        {days.map((d) => {
+          const h = d.count === 0 ? 4 : Math.max(8, Math.round((d.avgScore / max) * 72));
+          const day = weekday[new Date(`${d.date}T12:00:00`).getDay()] ?? '';
+          return (
+            <div key={d.date} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+              <span className="text-[10px] tabular-nums text-[var(--muted)]">
+                {d.count === 0 ? '—' : d.avgScore}
+              </span>
+              <div
+                className={`w-full max-w-8 rounded-sm ${
+                  d.count === 0
+                    ? 'bg-black/8'
+                    : d.avgScore >= 80
+                      ? 'bg-[var(--ok)]'
+                      : d.avgScore >= 50
+                        ? 'bg-[var(--warn)]'
+                        : 'bg-[var(--accent)]'
+                }`}
+                style={{ height: h }}
+                title={`${d.date} · ${d.count} 题 · 均分 ${d.avgScore}`}
+              />
+              <span className="text-[10px] text-[var(--muted)]">{day}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
