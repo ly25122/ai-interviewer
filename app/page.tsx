@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { SAMPLES, type Sample } from '@/lib/samples';
 import type {
   AnalyzeInput,
@@ -114,6 +115,12 @@ export default function AnalyzePage() {
           小红书上的面经真假混杂，广告帖里的题目却可能是真的。这里先判断一篇面经能不能信、
           题目能不能用，每条结论都附上原文证据，你可以自己核验。
         </p>
+        <Link
+          href="/prepare"
+          className="mt-3 inline-flex items-center gap-1.5 text-sm text-slate-900 underline underline-offset-4 hover:text-slate-600"
+        >
+          想知道自己准备到哪了？用几篇面经生成考纲和准备度地图
+        </Link>
       </header>
 
       <div className="grid gap-6 lg:grid-cols-2">

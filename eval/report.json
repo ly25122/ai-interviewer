@@ -1,0 +1,46 @@
+{
+  "ranAt": "2026-08-30T02:04:23.752Z",
+  "sampleCount": 3,
+  "failedCount": 0,
+  "agreementRate": 100,
+  "adRecall": 100,
+  "hallucinationRate": 4.166666666666666,
+  "extractionRecall": 100,
+  "matrix": {
+    "trustworthy": {
+      "trustworthy": 1,
+      "suspicious": 0,
+      "promotional": 0
+    },
+    "suspicious": {
+      "trustworthy": 0,
+      "suspicious": 1,
+      "promotional": 0
+    },
+    "promotional": {
+      "trustworthy": 0,
+      "suspicious": 0,
+      "promotional": 1
+    }
+  },
+  "details": [
+    {
+      "id": "seed-001",
+      "truth": "promotional",
+      "predicted": "promotional",
+      "error": null
+    },
+    {
+      "id": "seed-002",
+      "truth": "trustworthy",
+      "predicted": "trustworthy",
+      "error": null
+    },
+    {
+      "id": "seed-003",
+      "truth": "suspicious",
+      "predicted": "suspicious",
+      "error": null
+    }
+  ]
+}

@@ -319,8 +319,22 @@ function MapStep({
     return [...groups.entries()];
   }, [map]);
 
+  const selfConfident = map.cells.filter((c) => c.selfRating === 'confident').length;
+
   return (
     <div className="space-y-5">
+      {map.gapCount > 0 && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-5">
+          <p className="text-lg font-semibold leading-relaxed text-amber-900">
+            你以为自己会的 {selfConfident} 个考点里，有 {map.gapCount} 个经不起追问。
+          </p>
+          <p className="mt-1.5 text-sm leading-relaxed text-amber-800">
+            这不是坏消息。真正让人焦虑的从来不是知道自己不会，
+            而是隐隐怀疑「我以为我会的东西可能其实不会」。现在它变成了一份具体的清单。
+          </p>
+        </div>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-3">
         <Stat label="考点总数" value={map.total} hint={`来自 ${syllabus.postCount} 篇面经`} />
         <Stat label="已覆盖" value={map.covered} hint="自评会或实测确认" />
