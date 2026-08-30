@@ -37,8 +37,12 @@ function normalize(text: string): string {
 
 /**
  * 防幻觉的最后一道防线，也是唯一可靠的一道。
- * prompt 里的约束模型可能违反，但这里是代码层的强制校验：
- * 凡是无法在原文中逐字检索到的证据一律作废，该维度强制降级为 neutral。
+ * prompt 里的约束模型可能违反，这里是代码层的强制校验。
+ *
+ * 举证责任只落在指控方：
+ * 说这篇面经有问题，必须拿出原文证据，拿不出就作废；
+ * 说这篇面经没问题，依据往往是「某样东西不存在」，这类判断天然无法引用原文，
+ * 强行要求举证只会逼模型编造。
  */
 function verifyEvidence(signals: EvidenceSignal[], sourceText: string): {
   verified: EvidenceSignal[];
@@ -60,12 +64,12 @@ function verifyEvidence(signals: EvidenceSignal[], sourceText: string): {
       return ok;
     });
 
-    if (kept.length === 0) {
+    if (signal.level === 'negative' && kept.length === 0) {
       audit.downgraded.push(signal.dimension);
       return {
         ...signal,
         level: 'neutral',
-        reason: `${signal.reason}（原判断因无法在原文中找到支撑证据而降级）`,
+        reason: `${signal.reason}（该判断不利于可信度，但未能在原文中找到证据，已降级）`,
         quotes: [],
       };
     }
@@ -120,12 +124,45 @@ function reconcileVerdict(
   return { verdict };
 }
 
+/**
+ * 模型侧用 trustImpact 表达「对可信度的贡献方向」。
+ * 早期版本直接复用 positive/negative，模型会理解成「这个特征存不存在」，
+ * 于是把「发现了引流广告」标成 positive，导致判定逻辑失效。
+ */
+type TrustImpact = 'supports' | 'undermines' | 'insufficient';
+
+const IMPACT_TO_LEVEL: Record<TrustImpact, EvidenceSignal['level']> = {
+  supports: 'positive',
+  undermines: 'negative',
+  insufficient: 'neutral',
+};
+
+interface RawSignal {
+  dimension?: SignalDimension;
+  trustImpact?: TrustImpact;
+  reason?: string;
+  quotes?: string[];
+}
+
 interface RawAnalysis {
   verdict?: string;
   headline?: string;
   contentTrust?: string;
-  signals?: EvidenceSignal[];
+  signals?: RawSignal[];
   extracted?: PostAnalysis['extracted'];
+}
+
+function toSignals(raw: RawSignal[]): EvidenceSignal[] {
+  return raw
+    .filter((s): s is RawSignal & { dimension: SignalDimension } =>
+      ALL_DIMENSIONS.includes(s.dimension as SignalDimension),
+    )
+    .map((s) => ({
+      dimension: s.dimension,
+      level: IMPACT_TO_LEVEL[s.trustImpact ?? 'insufficient'] ?? 'neutral',
+      reason: s.reason ?? '',
+      quotes: s.quotes ?? [],
+    }));
 }
 
 const VERDICTS: Verdict[] = ['trustworthy', 'suspicious', 'promotional'];
@@ -143,13 +180,24 @@ export async function analyzePost(input: AnalyzeInput): Promise<AnalyzeResult> {
 
   const parsed = parseJson<RawAnalysis>(raw);
 
-  // 校验证据时把标题也纳入原文范围，标题中的引流话术同样是有效证据
-  const sourceText = [input.title, input.content, ...(input.comments ?? [])]
+  /*
+   * 可核验范围必须覆盖全部输入，而不只是正文。
+   * 时效性依据发布时间、账号画像依据作者数据，这些都是元数据；
+   * 若只拿正文做校验，这两个维度会被无差别降级。
+   */
+  const sourceText = [
+    input.title,
+    input.content,
+    ...(input.comments ?? []),
+    input.publishedAt,
+    input.author?.recentPostCompanies?.join('、'),
+    input.author?.recentPostCount != null ? String(input.author.recentPostCount) : undefined,
+  ]
     .filter(Boolean)
     .join('\n');
 
   const { verified, audit } = verifyEvidence(
-    fillMissingDimensions(parsed.signals ?? []),
+    fillMissingDimensions(toSignals(parsed.signals ?? [])),
     sourceText,
   );
 
