@@ -15,7 +15,7 @@
 |---|---|
 | 产品链接 | https://8.219.189.79.sslip.io/ ，无需登录 |
 | 演示 | 首页「演示模式」，或 `/interview?demo=1`（不写历史） |
-| SSH | `ssh -i <评委私钥> root@8.219.189.79`（22 端口）。两把评委公钥已写入 `/root/.ssh/authorized_keys`。项目目录 `/opt/diqi`，服务 `systemctl status diqi`。最后部署时间见该目录 `git log -1` |
+| SSH | `ssh -i <评委私钥> root@8.219.189.79`（22 端口）。两把评委公钥已写入 `/root/.ssh/authorized_keys`。项目目录 `/opt/ai-interviewer`，服务 `systemctl status ai-interviewer`。最后部署时间见该目录 `git log -1` |
 | 仓库 | 本仓库 public；commit history 按功能迭代，非一次性提交 |
 
 ## 它解决什么问题

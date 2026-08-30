@@ -13,7 +13,7 @@ DOMAIN="${1:?用法: bash setup.sh <域名> <git仓库地址> <DeepSeek API Key>
 REPO="${2:?缺少 git 仓库地址}"
 API_KEY="${3:?缺少 DeepSeek API Key}"
 
-APP_DIR=/opt/diqi
+APP_DIR=/opt/ai-interviewer
 
 echo "==> 安装系统依赖"
 apt-get update -qq
@@ -77,10 +77,10 @@ npm ci
 npm run build
 
 echo "==> 配置 systemd"
-sed "s|/opt/diqi|$APP_DIR|g" "$APP_DIR/deploy/diqi.service" >/etc/systemd/system/diqi.service
+sed "s|/opt/ai-interviewer|$APP_DIR|g" "$APP_DIR/deploy/ai-interviewer.service" >/etc/systemd/system/ai-interviewer.service
 systemctl daemon-reload
-systemctl enable --now diqi
-systemctl restart diqi
+systemctl enable --now ai-interviewer
+systemctl restart ai-interviewer
 
 echo "==> 配置 Caddy"
 sed "s|example.com|$DOMAIN|g" "$APP_DIR/deploy/Caddyfile" >/etc/caddy/Caddyfile
@@ -90,4 +90,4 @@ systemctl reload caddy || systemctl restart caddy
 echo
 echo "==> 完成。请验证："
 echo "    curl -I https://$DOMAIN"
-echo "    systemctl status diqi --no-pager"
+echo "    systemctl status ai-interviewer --no-pager"

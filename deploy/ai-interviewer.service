@@ -1,12 +1,12 @@
 [Unit]
-Description=Diqi - interview readiness app
+Description=情报驱动 面试备战
 After=network.target
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/opt/diqi
-EnvironmentFile=/opt/diqi/.env.local
+WorkingDirectory=/opt/ai-interviewer
+EnvironmentFile=/opt/ai-interviewer/.env.local
 ExecStart=/usr/bin/npm run start
 Restart=always
 RestartSec=5
