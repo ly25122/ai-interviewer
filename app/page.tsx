@@ -7,49 +7,56 @@ export default function HomePage() {
       <div className="lamp-glow pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-[rgba(31,122,102,0.35)] blur-3xl" />
 
       <nav className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-6 sm:px-6">
-        <span className="font-brand text-xl tracking-tight text-white">AI面试官</span>
+        <span className="font-brand text-xl tracking-tight text-white">情报驱动 · 备战</span>
       </nav>
 
       <section className="relative z-10 mx-auto flex min-h-[calc(100dvh-88px)] w-full max-w-6xl flex-col justify-center px-5 pb-16 pt-8 sm:px-6">
         <p className="anim-rise text-sm tracking-[0.22em] text-[#7dbaa8]">
-          RESUME · MOCK INTERVIEW
+          INTEL · TARGETED PRACTICE
         </p>
-        <h1 className="anim-rise-delay font-brand mt-5 max-w-4xl text-[clamp(2.6rem,7.5vw,5.2rem)] leading-[1.05] text-white">
-          先改简历
+        <h1 className="anim-rise-delay font-brand mt-5 max-w-4xl text-[clamp(2.4rem,7vw,5rem)] leading-[1.08] text-white">
+          先搞清楚怎么考
           <br />
-          再按它开面
+          再针对性开练
         </h1>
         <p className="anim-rise-late mt-6 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg">
-          对照岗位 JD 把简历改到能经得起追问，再用这份简历做模拟面试。
-          师兄经验、牛客帖、微信整理的面经——都放进面试里当辅助，不单独成一个产品。
-          也可以按公司/岗位自动检索公开面经。
+          做一个情报驱动的备战系统：先聚合这家公司、这个岗位怎么考，再结合你的简历和
+          JD 针对性模拟，最后告诉你哪里没准备好、下一步只练什么。
+        </p>
+        <p className="anim-rise-late mt-4 max-w-2xl text-sm leading-relaxed text-white/50">
+          不是心理陪伴。用事实把三个「不知道」变成确定：不知道考什么、不知道自己什么水平、不知道下一步干什么。
         </p>
         <div className="anim-rise-late mt-10 flex flex-wrap items-center gap-4">
           <Link
             href="/interview"
             className="btn-primary rounded-md px-6 py-3 text-sm font-medium tracking-wide"
           >
-            开始：改简历并模拟面试
+            开始备战
           </Link>
           <Link
-            href="/interview"
+            href="/interview?demo=1"
             className="rounded-md border border-white/20 px-6 py-3 text-sm text-white/80 transition hover:border-white/40 hover:text-white"
           >
             先看一遍演示
           </Link>
         </div>
 
-        <div className="anim-rise-late mt-20 grid max-w-3xl gap-8 border-t border-white/10 pt-8 sm:grid-cols-2">
+        <div className="anim-rise-late mt-20 grid max-w-4xl gap-8 border-t border-white/10 pt-8 sm:grid-cols-3">
           {[
             {
               n: '01',
-              t: '改简历',
-              d: '对照 JD 和面经，把虚的收一收、缺口补上、自己讲不清的别写。',
+              t: '岗位情报',
+              d: '粘贴、链接或自动检索面经，聚合成高频考点、真实问题和来源可信度。',
             },
             {
               n: '02',
-              t: '模拟面试',
-              d: '按改完的简历 × 岗位 JD 出题深挖。面经只在这里辅助出题。',
+              t: '针对训练',
+              d: '按简历 × JD × 情报出题。完整模拟，或只练情报里反复出现的点。',
+            },
+            {
+              n: '03',
+              t: '下一步只练 3 个',
+              d: '已验证、经不起追问、尚未覆盖。不堆分数，只给今天该补的三件事。',
             },
           ].map((item) => (
             <div key={item.n}>

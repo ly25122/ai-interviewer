@@ -1,0 +1,144 @@
+'use client';
+
+import sample from '@/lib/interview-sample.json';
+import { MaterialCard } from './shared';
+
+export function SetupPanel({
+  company,
+  role,
+  resume,
+  jd,
+  parsing,
+  error,
+  demo,
+  onCompany,
+  onRole,
+  onResume,
+  onJd,
+  onImport,
+  onDemo,
+  onSample,
+  onNext,
+}: {
+  company: string;
+  role: string;
+  resume: string;
+  jd: string;
+  parsing: 'resume' | 'jd' | null;
+  error: string;
+  demo: boolean;
+  onCompany: (v: string) => void;
+  onRole: (v: string) => void;
+  onResume: (v: string) => void;
+  onJd: (v: string) => void;
+  onImport: (which: 'resume' | 'jd', file: File) => void;
+  onDemo: () => void;
+  onSample: () => void;
+  onNext: () => void;
+}) {
+  const resumeReady = resume.trim().length >= 80;
+  const jdReady = jd.trim().length >= 40;
+  const targetReady = company.trim().length >= 2 && role.trim().length >= 2;
+  const canNext = resumeReady && jdReady && targetReady && !parsing;
+
+  return (
+    <div className="space-y-8">
+      <div className="max-w-2xl">
+        <p className="text-xs tracking-[0.2em] text-[var(--accent)]">① 目标岗位</p>
+        <h1 className="font-brand mt-2 text-3xl leading-tight sm:text-4xl">这次要面哪一家</h1>
+        <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] sm:text-base">
+          {demo
+            ? '演示已放入字节电商交易组：简历、JD、公司与岗位都齐了。下一步去看这个组怎么考。'
+            : '后续所有情报、模拟、复盘都围着这个目标转。公司、岗位、JD、简历都要有。'}
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button type="button" onClick={onDemo} className="btn-primary rounded-md px-4 py-2 text-sm font-medium">
+            不想填？先看一遍完整演示 →
+          </button>
+          <button type="button" onClick={onSample} className="btn-ghost rounded-md px-3 py-2 text-sm">
+            填入示例材料
+          </button>
+        </div>
+      </div>
+
+      <div className="surface grid gap-3 rounded-lg p-4 sm:grid-cols-2 sm:p-5">
+        <label className="block">
+          <span className="text-xs text-[var(--muted)]">公司 / 学校</span>
+          <input
+            value={company}
+            onChange={(e) => onCompany(e.target.value)}
+            placeholder="如「字节跳动」"
+            className="field mt-1 w-full rounded-md px-3 py-2 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs text-[var(--muted)]">岗位 / 专业</span>
+          <input
+            value={role}
+            onChange={(e) => onRole(e.target.value)}
+            placeholder="如「后端开发实习生」"
+            className="field mt-1 w-full rounded-md px-3 py-2 text-sm"
+          />
+        </label>
+      </div>
+
+      <MaterialCard
+        key={`resume-${demo ? 'demo' : 'own'}-${resume.trim() ? '1' : '0'}`}
+        step="你的简历"
+        label="用来对照 JD 和情报"
+        value={resume}
+        ready={resumeReady}
+        minLen={80}
+        parsing={parsing === 'resume'}
+        onChange={onResume}
+        onImport={(file) => onImport('resume', file)}
+        pastePlaceholder="粘贴或上传简历。训练和复盘都会用这份。"
+        readyHint="可以进入下一步"
+        waitHint="再补一点项目或实习细节"
+        defaultMode="paste"
+        tall
+      />
+
+      <MaterialCard
+        key={`jd-${demo ? 'demo' : 'own'}-${jd.trim() ? '1' : '0'}`}
+        step="岗位 JD"
+        label="目标岗位描述"
+        value={jd}
+        ready={jdReady}
+        minLen={40}
+        parsing={parsing === 'jd'}
+        onChange={onJd}
+        onImport={(file) => onImport('jd', file)}
+        pastePlaceholder="粘贴岗位 JD：职责、任职要求、技术栈"
+        readyHint="岗位要求已能对照"
+        waitHint="把职位要求也贴进来"
+        defaultMode="paste"
+      />
+
+      <div className="surface rounded-lg p-4 sm:p-5">
+        <p className="text-xs text-[var(--muted)]">
+          示例来自 {sample ? '一份电商后端实习材料' : ''}。下一步不是直接开面，而是先聚合这个岗位怎么考。
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={onNext}
+            disabled={!canNext}
+            className="btn-primary rounded-md px-5 py-2.5 text-sm font-medium"
+          >
+            下一步：收集面试情报 →
+          </button>
+          <span className="text-xs text-[var(--muted)]">
+            {canNext ? '目标已锁定。' : '公司、岗位、简历、JD 都齐了才能继续'}
+          </span>
+        </div>
+      </div>
+
+      {error && (
+        <p className="rounded-md border border-[rgba(159,45,58,0.25)] bg-[rgba(159,45,58,0.08)] px-3 py-2 text-sm text-[var(--danger)]">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}

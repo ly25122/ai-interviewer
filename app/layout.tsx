@@ -18,9 +18,9 @@ const serif = Noto_Serif_SC({
 });
 
 export const metadata: Metadata = {
-  title: 'AI面试官 · 改简历，再按它开面',
+  title: '情报驱动 · 面试备战',
   description:
-    '对照岗位 JD 改简历，再用这份简历做模拟面试。面经只在面试里当辅助。面向大厂技术实习。',
+    '先聚合这家公司、这个岗位怎么考，再结合简历和 JD 针对性模拟，最后告诉你哪里没准备好、下一步只练什么。',
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {

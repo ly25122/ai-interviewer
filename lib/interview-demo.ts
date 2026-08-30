@@ -5,6 +5,7 @@ import type {
   ReferenceAnswer,
   ResumeEdit,
   ResumeInterviewSession,
+  Syllabus,
 } from '@/lib/types';
 import { toRecord } from '@/lib/progress';
 import sample from '@/lib/interview-sample.json';
@@ -15,8 +16,112 @@ import sample from '@/lib/interview-sample.json';
  * session，页面直接展示回放，因此演示模式可以离线、无 Key 走完整条流程。
  */
 
+export const demoCompany = '字节跳动';
+export const demoRole = '后端开发实习生（电商 - 交易方向）';
 export const demoResume = sample.resume;
 export const demoJd = sample.jd;
+
+export const demoSyllabus: Syllabus = {
+  company: demoCompany,
+  role: demoRole,
+  postCount: 2,
+  generatedAt: '2026-08-30T05:00:00.000Z',
+  topics: [
+    {
+      id: 'sy-lua',
+      title: '秒杀库存一致性（Redis / Lua / 落库）',
+      category: '高并发',
+      weight: 5,
+      variants: [
+        '如果 Lua 扣减成功但异步落库失败了怎么办',
+        '库存到底怎么扣、怎么保证不超卖',
+      ],
+      sources: [
+        {
+          postId: 'demo-intel-1',
+          verdict: 'trustworthy',
+          contribution: 5,
+          originalText: '如果 Lua 扣减成功但异步落库失败了怎么办',
+        },
+      ],
+    },
+    {
+      id: 'sy-mq',
+      title: '削峰选型：Kafka 还是 RocketMQ',
+      category: '中间件',
+      weight: 4.5,
+      variants: ['你为什么用 Kafka 不用 RocketMQ', '削峰怎么做'],
+      sources: [
+        {
+          postId: 'demo-intel-1',
+          verdict: 'trustworthy',
+          contribution: 4.5,
+          originalText: '你为什么用 Kafka 不用 RocketMQ',
+        },
+      ],
+    },
+    {
+      id: 'sy-idem',
+      title: '下单幂等',
+      category: '高并发',
+      weight: 4,
+      variants: ['消费端重复消费如何不生成两个订单'],
+      sources: [
+        {
+          postId: 'demo-intel-2',
+          verdict: 'trustworthy',
+          contribution: 4,
+          originalText: '深挖秒杀项目（超卖、幂等、削峰）',
+        },
+      ],
+    },
+    {
+      id: 'sy-shard',
+      title: '分库分表与非分片键查询',
+      category: '存储',
+      weight: 3.5,
+      variants: ['分片键选得对不对', '非分片键查询怎么走'],
+      sources: [
+        {
+          postId: 'demo-intel-1',
+          verdict: 'trustworthy',
+          contribution: 3.5,
+          originalText: '分库分表会追分片键选得对不对、非分片键查询怎么走',
+        },
+      ],
+    },
+    {
+      id: 'sy-mysql',
+      title: 'MySQL 事务隔离与间隙锁',
+      category: '数据库',
+      weight: 3,
+      variants: ['事务隔离级别、MVCC、间隙锁'],
+      sources: [
+        {
+          postId: 'demo-intel-2',
+          verdict: 'trustworthy',
+          contribution: 3,
+          originalText: 'MySQL 事务隔离级别、MVCC、间隙锁',
+        },
+      ],
+    },
+    {
+      id: 'sy-sentinel',
+      title: '限流 / 熔断 / 降级',
+      category: '稳定性',
+      weight: 2.5,
+      variants: ['限流熔断降级'],
+      sources: [
+        {
+          postId: 'demo-intel-2',
+          verdict: 'trustworthy',
+          contribution: 2.5,
+          originalText: '整体追问很细，强度较大',
+        },
+      ],
+    },
+  ],
+};
 
 export const demoIntel: IntelligenceItem[] = [
   {

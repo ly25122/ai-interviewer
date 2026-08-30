@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildReadinessMap } from '../readiness';
+import { buildPrepReadiness, buildReadinessMap } from '../readiness';
 import type { ProbeSession, Syllabus, SyllabusTopic } from '../../types';
 
 function topic(id: string, weight: number, title = `考点${id}`): SyllabusTopic {
@@ -99,5 +99,56 @@ describe('buildReadinessMap', () => {
     // t1 权重 3.0 且不稳（系数 0.7）得 2.1，t3 权重 1.0 完全不会（系数 1.0）得 1.0
     const map = buildReadinessMap(syllabus, { t1: 'unsure', t3: 'unknown' });
     expect(map.nextThree[0].topicId).toBe('t1');
+  });
+});
+
+describe('buildPrepReadiness', () => {
+  it('把模拟面试结果叠到同名考纲上，并给出下一步三条', () => {
+    const map = buildPrepReadiness(
+      {
+        ...syllabus,
+        topics: [
+          topic('t1', 5, '秒杀库存一致性（Redis / Lua / 落库）'),
+          topic('t2', 4, '削峰选型：Kafka 还是 RocketMQ'),
+          topic('t3', 3, '下单幂等'),
+        ],
+      },
+      {
+        roleGuess: '后端',
+        opening: '',
+        generatedAt: NOW_ISO(),
+        points: [
+          {
+            id: 'p1',
+            title: '秒杀库存扣减：Redis 扣成功但异步落库失败',
+            source: 'intel_hit',
+            reason: '',
+          },
+          {
+            id: 'p2',
+            title: '技术选型：为什么用 Kafka 削峰而不是 RocketMQ',
+            source: 'intel_hit',
+            reason: '',
+          },
+        ],
+      },
+      {
+        p1: {
+          pointId: 'p1',
+          outcome: 'verified',
+          collapsedAtTurn: null,
+          turns: [{ question: 'q', answer: 'a', hasNewFact: true, judgement: 'ok' }],
+        },
+        p2: {
+          pointId: 'p2',
+          outcome: 'collapsed',
+          collapsedAtTurn: 2,
+          turns: [{ question: 'q', answer: 'a', hasNewFact: false, judgement: 'no' }],
+        },
+      },
+    );
+    expect(map.cells.find((c) => c.topicId === 't1')?.status).toBe('verified');
+    expect(map.cells.find((c) => c.topicId === 't2')?.status).toBe('shaky');
+    expect(map.nextThree[0].topicId).toBe('t2');
   });
 });

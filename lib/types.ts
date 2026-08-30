@@ -192,6 +192,30 @@ export interface ReadinessMap {
   nextThree: NextAction[];
 }
 
+/* ===================== 备战项目 ===================== */
+
+/** 用户心智阶段。面试提纲是内部产物，不单独成阶段。 */
+export type PrepPhase = 'setup' | 'intel' | 'practice' | 'review';
+
+/** 针对性训练：完整模拟，或只练情报/高频弱点 */
+export type TrainingMode = 'full' | 'intel';
+
+/**
+ * 一次备战围绕一个目标岗位展开。
+ * 以后可扩展为多个目标（字节大数据 / 腾讯后台），当前 MVP 同时只跑一个。
+ */
+export interface PrepProject {
+  id: string;
+  company: string;
+  role: string;
+  resume: string;
+  jd: string;
+  intelligence: IntelligenceItem[];
+  syllabus?: Syllabus;
+  readiness?: ReadinessMap;
+  interviewDate?: string;
+}
+
 /* ===================== 简历 × JD 面试 ===================== */
 
 /* ===================== 面试情报 ===================== */

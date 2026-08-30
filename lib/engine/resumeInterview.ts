@@ -5,6 +5,7 @@ import type {
   InterviewPlan,
   IntelligenceItem,
   ReferenceAnswer,
+  TrainingMode,
 } from '../types';
 import { MAX_PROBE_TURNS } from './probe';
 
@@ -141,17 +142,22 @@ export async function planResumeInterview(
   resume: string,
   jd: string,
   intelligence?: IntelligenceItem[],
+  trainingMode: TrainingMode = 'full',
 ): Promise<InterviewPlan> {
   const resumeText = clip(resume, 12000);
   const jdText = clip(jd, 8000);
   const intel = buildIntel(intelligence);
+  const modeHint =
+    trainingMode === 'intel'
+      ? '\n\n【训练模式】情报针对训练：优先且尽量只出 intel_hit。简历与 JD 只作上下文，不要把主战场放在简历数字或 JD 缺口上。'
+      : '';
 
   const raw = await chat({
     messages: [
       { role: 'system', content: PLAN_SYSTEM },
       {
         role: 'user',
-        content: `【简历】\n${resumeText}\n\n【岗位 JD】\n${jdText}\n\n【面试情报】\n${intel.prompt}`,
+        content: `【简历】\n${resumeText}\n\n【岗位 JD】\n${jdText}\n\n【面试情报】\n${intel.prompt}${modeHint}`,
       },
     ],
     temperature: 0.2,
@@ -182,13 +188,21 @@ export async function planResumeInterview(
     throw new Error('未能从简历与 JD 生成有效追问点，请检查文本是否完整');
   }
 
+  const ordered =
+    trainingMode === 'intel'
+      ? [...points.filter((p) => p.source === 'intel_hit'), ...points.filter((p) => p.source !== 'intel_hit')].slice(
+          0,
+          6,
+        )
+      : points;
+
   return {
     roleGuess: parsed.roleGuess?.trim() || '技术实习',
     companyGuess: parsed.companyGuess?.trim() || undefined,
     opening:
       parsed.opening?.trim() ||
       '我们按你的简历和这个岗位的 JD 来聊，我会针对你写过的经历往下追。',
-    points,
+    points: ordered,
     generatedAt: new Date().toISOString(),
   };
 }
