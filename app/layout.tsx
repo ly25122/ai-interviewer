@@ -25,7 +25,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="zh-CN" className={`h-full antialiased ${sans.variable} ${serif.variable}`}>
+    <html
+      lang="zh-CN"
+      data-scroll-behavior="smooth"
+      className={`h-full antialiased ${sans.variable} ${serif.variable}`}
+    >
       <body
         className="min-h-full flex flex-col"
         style={

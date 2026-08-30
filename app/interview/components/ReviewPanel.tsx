@@ -59,7 +59,7 @@ export function ReviewPanel({
   return (
     <div className="space-y-8">
       <div className="max-w-2xl">
-        <p className="text-xs tracking-[0.2em] text-[var(--accent)]">④ 复盘</p>
+        <p className="text-xs tracking-[0.2em] text-[var(--accent)]">⑤ 复盘</p>
         <h1 className="font-brand mt-2 text-3xl leading-tight sm:text-4xl">
           {company} · {role}
         </h1>

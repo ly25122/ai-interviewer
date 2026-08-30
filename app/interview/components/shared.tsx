@@ -42,6 +42,27 @@ export function uid() {
   return Math.random().toString(36).slice(2, 9);
 }
 
+export function hostFromUrl(url?: string): string {
+  if (!url) return '';
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+}
+
+export function formatIntelDate(iso?: string): string {
+  if (!iso) return '';
+  const m = iso.match(/\d{4}-\d{2}-\d{2}/);
+  if (m) return m[0];
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${day}`;
+}
+
 export async function parseUpload(file: File): Promise<string> {
   const body = new FormData();
   body.append('file', file);
@@ -68,6 +89,7 @@ export function MaterialCard({
   waitHint,
   defaultMode = 'upload',
   tall = false,
+  compact = false,
 }: {
   step: string;
   label: string;
@@ -82,13 +104,14 @@ export function MaterialCard({
   waitHint: string;
   defaultMode?: 'upload' | 'paste';
   tall?: boolean;
+  compact?: boolean;
 }) {
   const [mode, setMode] = useState<'upload' | 'paste'>(defaultMode);
   const [dragOver, setDragOver] = useState(false);
-  const box = tall ? 'h-80' : 'h-64';
+  const box = compact ? 'h-36' : tall ? 'h-80' : 'h-64';
 
   return (
-    <div className="surface flex flex-col rounded-lg p-4 sm:p-5">
+    <div className={`surface flex flex-col rounded-lg ${compact ? 'p-3' : 'p-4 sm:p-5'}`}>
       <div className="flex items-center justify-between gap-2">
         <div>
           <p className="text-[11px] tracking-[0.18em] text-[var(--muted)]">{step}</p>

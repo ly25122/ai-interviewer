@@ -11,9 +11,11 @@ export interface JourneyStep {
 export function JourneyBar({
   steps,
   current,
+  compact = false,
 }: {
   steps: JourneyStep[];
   current: string;
+  compact?: boolean;
 }) {
   const idx = Math.max(
     0,
@@ -29,7 +31,9 @@ export function JourneyBar({
           <li key={step.id} className="flex min-w-0 flex-1 items-start">
             <div className="flex min-w-0 flex-col items-center text-center">
               <span
-                className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium transition ${
+                className={`flex items-center justify-center rounded-full font-medium transition ${
+                  compact ? 'h-5 w-5 text-[10px]' : 'h-7 w-7 text-xs'
+                } ${
                   done
                     ? 'bg-[var(--accent)] text-white'
                     : active
@@ -40,16 +44,16 @@ export function JourneyBar({
                 {done ? '✓' : i + 1}
               </span>
               <span
-                className={`mt-1.5 text-[11px] leading-tight ${
-                  active ? 'text-[var(--ink)]' : 'text-[var(--muted)]'
-                }`}
+                className={`leading-tight ${
+                  compact ? 'mt-0.5 text-[10px]' : 'mt-1.5 text-[11px]'
+                } ${active ? 'text-[var(--ink)]' : 'text-[var(--muted)]'}`}
               >
                 {step.label}
               </span>
             </div>
             {i < steps.length - 1 && (
               <div
-                className={`mx-1 mt-3 h-px flex-1 ${
+                className={`mx-1 flex-1 ${compact ? 'mt-2.5 h-px' : 'mt-3 h-px'} ${
                   i < idx ? 'bg-[var(--accent)]' : 'bg-black/10'
                 }`}
               />

@@ -36,6 +36,7 @@ import type {
 import { IntelligenceHub } from './components/IntelligenceHub';
 import { LivePhase } from './components/LiveInterview';
 import { PracticeLauncher } from './components/PracticeLauncher';
+import { ProfilePanel } from './components/ProfilePanel';
 import { ReviewPanel } from './components/ReviewPanel';
 import { SetupPanel } from './components/SetupPanel';
 import { parseUpload } from './components/shared';
@@ -43,6 +44,7 @@ import { parseUpload } from './components/shared';
 const JOURNEY = [
   { id: 'setup', label: '目标岗位' },
   { id: 'intel', label: '面试情报' },
+  { id: 'profile', label: '岗位画像' },
   { id: 'practice', label: '针对训练' },
   { id: 'review', label: '复盘' },
 ];
@@ -141,15 +143,15 @@ function InterviewApp() {
     }
   }
 
-  async function summarizeIntel() {
+  async function summarizeIntel(): Promise<boolean> {
     if (demo) {
       setSyllabus(demoSyllabus);
       setError('');
-      return;
+      return true;
     }
     if (intel.length === 0) {
       setError('先加入至少一条情报');
-      return;
+      return false;
     }
     setSummarizing(true);
     setError('');
@@ -166,11 +168,18 @@ function InterviewApp() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? '聚合失败');
       setSyllabus(data.syllabus as Syllabus);
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : '聚合失败');
+      return false;
     } finally {
       setSummarizing(false);
     }
+  }
+
+  async function goProfile() {
+    const ok = await summarizeIntel();
+    if (ok) setPhase('profile');
   }
 
   async function startTraining(mode: TrainingMode) {
@@ -232,28 +241,28 @@ function InterviewApp() {
   return (
     <main className="min-h-dvh bg-[var(--paper)] text-[var(--ink)]">
       <header className="border-b border-[var(--line)] bg-[var(--paper-lift)]/85 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 py-4">
-          <Link href="/" className="font-brand text-xl tracking-tight">
+        <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-5 py-2.5">
+          <Link href="/" className="shrink-0 font-brand text-lg tracking-tight">
             情报驱动 · 备战
           </Link>
-          <p className="text-sm text-[var(--muted)]">
+          <div className="min-w-0 flex-1">
+            <JourneyBar steps={JOURNEY} current={journeyCurrent} compact />
+          </div>
+          <p className="hidden shrink-0 text-[11px] text-[var(--muted)] sm:block">
             {company && role ? `${company} · ${role}` : '先锁定目标岗位'}
           </p>
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-5xl px-5 py-8">
-        <div className="surface mb-6 rounded-lg px-4 py-4 sm:px-6">
-          <JourneyBar steps={JOURNEY} current={journeyCurrent} />
-        </div>
+      <div className="mx-auto w-full max-w-6xl px-5 py-5">
 
         {demo && (
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--accent)]/40 bg-[rgba(159,45,58,0.06)] px-4 py-3">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--accent)]/40 bg-[rgba(159,45,58,0.06)] px-4 py-2.5">
             <p className="text-sm text-[var(--ink)]">
               <span className="font-medium">演示模式</span>
               <span className="text-[var(--muted)]">
                 {' '}
-                · 字节电商交易组。情报已聚合成考点，训练结果可直接看复盘。
+                · 字节电商交易组。可从情报点到画像、训练和复盘。
               </span>
             </p>
             <button type="button" onClick={resetAll} className="btn-ghost rounded-md px-3 py-1.5 text-xs">
@@ -298,12 +307,22 @@ function InterviewApp() {
             role={role}
             jd={jd}
             items={intel}
-            syllabus={syllabus}
             summarizing={summarizing}
             error={error}
             onChange={setIntel}
-            onSummarize={summarizeIntel}
             onBack={() => setPhase('setup')}
+            onNext={goProfile}
+          />
+        )}
+
+        {phase === 'profile' && (
+          <ProfilePanel
+            company={company}
+            role={role}
+            intel={intel}
+            syllabus={syllabus}
+            error={error}
+            onBack={() => setPhase('intel')}
             onNext={() => {
               setError('');
               setLive(false);
@@ -321,7 +340,7 @@ function InterviewApp() {
             loading={loading}
             error={error}
             onStart={startTraining}
-            onBack={() => setPhase('intel')}
+            onBack={() => setPhase('profile')}
           />
         )}
 

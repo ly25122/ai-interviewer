@@ -23,14 +23,13 @@ export function PracticeLauncher({
 }) {
   const topics = syllabus?.topics.length ?? 0;
   return (
-    <div className="space-y-8">
-      <div className="max-w-2xl">
-        <p className="text-xs tracking-[0.2em] text-[var(--accent)]">③ 针对训练</p>
-        <h1 className="font-brand mt-2 text-3xl leading-tight sm:text-4xl">
+    <div className="space-y-5">
+      <div>
+        <h1 className="font-brand text-2xl leading-tight">
           {company} · {role}
         </h1>
-        <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
-          面试提纲在后台生成，不单独占一步。选一种练法，系统会按简历 × JD × 情报出题。
+        <p className="mt-1 text-xs text-[var(--muted)]">
+          面试提纲在后台生成。选一种练法，系统会按简历 × JD × 情报出题。
         </p>
       </div>
 
@@ -73,7 +72,7 @@ export function PracticeLauncher({
       )}
 
       <button type="button" onClick={onBack} className="btn-ghost rounded-md px-4 py-2.5 text-sm">
-        返回情报
+        返回岗位画像
       </button>
     </div>
   );

@@ -24,7 +24,7 @@ export const demoJd = sample.jd;
 export const demoSyllabus: Syllabus = {
   company: demoCompany,
   role: demoRole,
-  postCount: 2,
+  postCount: 3,
   generatedAt: '2026-08-30T05:00:00.000Z',
   topics: [
     {
@@ -129,14 +129,28 @@ export const demoIntel: IntelligenceItem[] = [
     source: 'paste',
     label: '师兄今年上半年面过这个交易组',
     trust: 'high',
+    publishedAt: '2026-03-12',
     content:
       '师兄今年上半年面了抖音电商交易组的后端实习，交代了几点：一面会死死盯着简历里的秒杀项目往下追——库存到底怎么扣、怎么保证不超卖、Redis 和 DB 怎么保持一致，尤其爱问「如果 Lua 扣减成功但异步落库失败了怎么办」，会一层层追到你答不上来为止。还爱问技术选型题，比如「你为什么用 Kafka 不用 RocketMQ」，答不出选型理由就会被判定是跟着教程做的。分库分表会追分片键选得对不对、非分片键查询怎么走。二面大概率现场系统设计，去年考过「设计一个秒杀系统」和「设计短链服务」。面试官明显不吃背八股，喜欢结合你项目里的真实取舍问。',
+  },
+  {
+    id: 'demo-intel-3',
+    source: 'web',
+    label: '掘金·电商交易后端校招面经汇总',
+    url: 'https://juejin.cn/post/example',
+    platform: 'juejin.cn',
+    publishedAt: '2026-05-18',
+    trust: 'medium',
+    content:
+      '校招电商交易后端常见追问：限流熔断降级怎么配、订单号怎么生成、分布式事务用不用 Seata。有人提到交易组更看重你能不能讲清失败路径，而不是只背成功路径。',
   },
   {
     id: 'demo-intel-2',
     source: 'url',
     label: '牛客·字节电商后端实习一面面经',
     url: 'https://www.nowcoder.com/discuss/example',
+    platform: 'nowcoder.com',
+    publishedAt: '2026-04-02',
     trust: 'medium',
     content:
       '字节电商后端实习一面：自我介绍 → 深挖秒杀项目（超卖、幂等、削峰）→ Redis 数据结构与持久化 → MySQL 事务隔离级别、MVCC、间隙锁 → 手撕「无重复字符的最长子串」。二面：分库分表怎么分、分布式事务怎么保证、设计一个订单号生成器。三面偏 HR 与反问。整体追问很细，强度较大。',

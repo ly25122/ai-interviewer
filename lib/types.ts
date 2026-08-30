@@ -195,7 +195,7 @@ export interface ReadinessMap {
 /* ===================== 备战项目 ===================== */
 
 /** 用户心智阶段。面试提纲是内部产物，不单独成阶段。 */
-export type PrepPhase = 'setup' | 'intel' | 'practice' | 'review';
+export type PrepPhase = 'setup' | 'intel' | 'profile' | 'practice' | 'review';
 
 /** 针对性训练：完整模拟，或只练情报/高频弱点 */
 export type TrainingMode = 'full' | 'intel';
@@ -241,6 +241,10 @@ export interface IntelligenceItem {
   label: string;
   /** 原始链接（url / web 来源时有） */
   url?: string;
+  /** 站点，如 nowcoder.com */
+  platform?: string;
+  /** 公开页标注的日期（自动检索时有） */
+  publishedAt?: string;
   /** 抽取出的正文 */
   content: string;
   /** 可信度：师兄一手经验 high，公开面经默认 medium，疑似广告 low */
