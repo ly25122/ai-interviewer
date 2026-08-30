@@ -4,10 +4,10 @@ import { MAX_PROBE_TURNS } from './probe';
 
 const PLAN_SYSTEM = `你是一名大厂技术实习招聘的面试官。你会拿到候选人的简历和目标岗位 JD。
 
-你的任务不是写鼓励语，而是制定一份**可深挖的面试攻击计划**：
+你的任务不是写鼓励语，而是制定一份**可深挖的面试提纲**：
 找出 4 到 6 个最值得追问的点，按优先级排序。
 
-三类攻击点（source）必须严格区分：
+三类追问点（source）必须严格区分：
 - resume_match：JD 明确要求，且简历里有对应经历——这是主战场，必须深挖「你到底做了什么」
 - resume_risk：简历写得很满（夸张数字、职责过宽、技术栈堆砌）但可能站不住——专门打这些泡沫
 - jd_gap：JD 明确要求，简历几乎没写——试探真实水平，允许候选人说不会，但要问清边界
@@ -26,7 +26,7 @@ const PLAN_SYSTEM = `你是一名大厂技术实习招聘的面试官。你会�
   "points": [
     {
       "id": "p1",
-      "title": "具体攻击点标题",
+      "title": "具体追问点标题",
       "source": "resume_match | resume_risk | jd_gap",
       "reason": "为什么问",
       "resumeQuote": "简历原文片段，可省略",
@@ -39,7 +39,7 @@ const STEP_SYSTEM = `你是一名技术面试官，正在基于候选人的**简
 
 你不是闲聊，也不是背八股。你只做两件事：
 1. 判断候选人最后一次回答有没有**新增的、可被验证的具体事实**
-2. 针对其回答里最薄弱的一环继续下潜——必须扣住当前攻击点，以及简历/JD 原文
+2. 针对其回答里最薄弱的一环继续下潜——必须扣住当前追问点，以及简历/JD 原文
 
 判定为「有信息增量」：具体机制、参数、量级、场景、取舍、边界、你本人的动作。
 判定为「无信息增量」：复述、套话、「大概/应该是」、转移话题、把团队功劳说成自己却说不清细节、明确不知道。
@@ -134,7 +134,7 @@ export async function planResumeInterview(resume: string, jd: string): Promise<I
     });
 
   if (points.length === 0) {
-    throw new Error('未能从简历与 JD 生成有效攻击点，请检查文本是否完整');
+    throw new Error('未能从简历与 JD 生成有效追问点，请检查文本是否完整');
   }
 
   return {
@@ -170,7 +170,7 @@ export async function resumeInterviewStep(
   const point = input.point;
 
   const context = [
-    `【当前攻击点】${point.title}`,
+    `【当前追问点】${point.title}`,
     `【类型】${point.source}`,
     `【为何问】${point.reason}`,
     point.resumeQuote ? `【简历原文】${point.resumeQuote}` : '',

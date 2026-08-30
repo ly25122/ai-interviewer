@@ -16,7 +16,7 @@ type Phase = 'input' | 'plan' | 'live' | 'done';
 
 const JOURNEY = [
   { id: 'input', label: '上传材料' },
-  { id: 'plan', label: '攻击计划' },
+  { id: 'plan', label: '面试提纲' },
   { id: 'live', label: '深挖追问' },
   { id: 'done', label: '复盘' },
 ];
@@ -307,7 +307,7 @@ function InputPhase({
           }
           className="btn-primary rounded-md px-5 py-2.5 text-sm font-medium"
         >
-          {loading ? '正在对照简历与 JD 出题…' : '生成面试攻击计划'}
+          {loading ? '正在对照简历与 JD 出题…' : '生成面试提纲'}
         </button>
         <span className="text-xs text-[var(--muted)]">
           简历 {resume.length} 字 · JD {jd.length} 字
@@ -379,7 +379,7 @@ function PlanPhase({
   return (
     <div className="space-y-6">
       <div className="max-w-2xl">
-        <p className="text-xs tracking-[0.2em] text-[var(--accent)]">ATTACK PLAN</p>
+        <p className="text-xs tracking-[0.2em] text-[var(--accent)]">OUTLINE</p>
         <h1 className="font-brand mt-2 text-3xl leading-tight">
           {plan.companyGuess ? `${plan.companyGuess} · ` : ''}
           {plan.roleGuess}
@@ -389,7 +389,7 @@ function PlanPhase({
 
       <div className="surface rounded-lg p-4">
         <Meter
-          label="今天要深挖的攻击点"
+          label="今天要深挖的追问点"
           value={0}
           max={plan.points.length}
           hint={`一共 ${plan.points.length} 个点，范围是有限的。问完就停，不会无限加压。`}
@@ -474,8 +474,8 @@ function LivePhase({
           label="已走完"
           caption={
             left > 0
-              ? `还剩 ${left} 个攻击点。范围有限，走完就是今天的全部。`
-              : '全部攻击点都问过了。'
+              ? `还剩 ${left} 个追问点。范围有限，走完就是今天的全部。`
+              : '全部追问点都问过了。'
           }
           tone={done === plan.points.length ? 'ok' : 'accent'}
         />
@@ -495,7 +495,7 @@ function LivePhase({
 
     <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
       <aside className="space-y-2">
-        <p className="text-xs tracking-[0.16em] text-[var(--muted)]">攻击点</p>
+        <p className="text-xs tracking-[0.16em] text-[var(--muted)]">追问点</p>
         {plan.points.map((p, i) => {
           const done = sessions[p.id];
           return (
@@ -744,10 +744,10 @@ function DonePhase({
         <h1 className="font-brand mt-2 text-3xl leading-tight">面试复盘</h1>
         <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
           {summary.collapsed > 0
-            ? `你在 ${summary.done} 个攻击点里，有 ${summary.collapsed} 个经不起继续追问。这不是打击，是清单。`
+            ? `你在 ${summary.done} 个追问点里，有 ${summary.collapsed} 个经不起继续追问。这不是打击，是清单。`
             : summary.verified > 0
               ? `已验证的 ${summary.verified} 个点都撑住了追问。继续保持用事实说话。`
-              : '还没有完成任何攻击点。'}
+              : '还没有完成任何追问点。'}
         </p>
       </div>
 

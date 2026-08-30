@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: '缺少简历或 JD' }, { status: 400 });
   }
   if (!body.point?.title?.trim()) {
-    return NextResponse.json({ error: '缺少攻击点' }, { status: 400 });
+    return NextResponse.json({ error: '缺少追问点' }, { status: 400 });
   }
 
   try {
