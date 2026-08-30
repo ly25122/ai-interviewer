@@ -48,8 +48,8 @@ export default function HomePage() {
         <div className="flex min-w-0 items-center gap-3">
           <MarkLogo />
           <div className="min-w-0">
-            <p className="text-[17px] font-semibold tracking-tight text-white">面试参谋</p>
-            <p className="text-[11px] text-white/45">情报驱动的 AI 面试备战</p>
+            <p className="text-[17px] font-semibold tracking-tight text-white">情报驱动</p>
+            <p className="text-[11px] text-white/45">面试备战</p>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-4 sm:gap-5">

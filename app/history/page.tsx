@@ -77,7 +77,7 @@ function HistoryApp() {
       <header className="border-b border-[var(--line)] bg-[var(--paper-lift)]/85 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-5 py-2.5">
           <Link href="/" className="shrink-0 font-brand text-lg tracking-tight">
-            情报驱动 · 备战
+            情报驱动 面试备战
           </Link>
           <p className="min-w-0 flex-1 text-sm text-[var(--muted)]">往期复盘</p>
           <Link href="/interview" className="btn-ghost rounded-md px-3 py-1.5 text-xs">

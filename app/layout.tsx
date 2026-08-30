@@ -18,7 +18,7 @@ const serif = Noto_Serif_SC({
 });
 
 export const metadata: Metadata = {
-  title: '情报驱动 · 面试备战',
+  title: '情报驱动 面试备战',
   description:
     '先聚合这家公司、这个岗位怎么考，再结合简历和 JD 针对性模拟，最后告诉你哪里没准备好、下一步只练什么。',
 };
