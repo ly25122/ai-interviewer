@@ -5,7 +5,6 @@
 - 线上：https://8.219.189.79.sslip.io/
 - 演示：https://8.219.189.79.sslip.io/interview?demo=1
 - 仓库：https://github.com/ly25122/ai-interviewer
-- Product Memo：[`docs/PRODUCT_MEMO.md`](docs/PRODUCT_MEMO.md)
 
 面向准备实习或夏令营面试的本科生。去向不一定是公司，常常一场接一场。
 
@@ -129,7 +128,6 @@ lib/interview-demo.ts        演示模式材料
 lib/samples.*                示例面经
 scripts/                     端到端冒烟脚本
 deploy/                      部署脚本、评委公钥、服务配置
-docs/PRODUCT_MEMO.md         提交用 Product Memo（1–2 页）
 docs/PRD.md                  开发期需求记录
 ```
 
