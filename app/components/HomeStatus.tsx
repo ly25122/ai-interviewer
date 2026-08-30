@@ -148,7 +148,7 @@ export function HomeStatus() {
           <p className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-xs leading-relaxed text-white/40">
             {lastArchive
               ? '再练完一场，往期会按时间列在这里。'
-              : '训练记录只留在这台设备上。走完一场后，公司和岗位会出现在这里。'}
+              : '训练记录只留在这台设备上。走完一场后，去向和方向会出现在这里。'}
           </p>
         )}
       </div>
@@ -210,7 +210,7 @@ function EmptyRecent({ todayCount, streak }: { todayCount: number; streak: numbe
       </p>
       <h2 className="mt-3 text-[1.65rem] font-semibold leading-tight text-white">尚未开始</h2>
       <p className="mt-2 text-sm leading-relaxed text-white/60">
-        指定目标公司与岗位后，即可收集面经并开始训练。
+        锁定下一场面试后，即可收集面经并开始训练。
         {todayCount > 0
           ? ` 今天已练过 ${todayCount} 个考点。`
           : streak > 1

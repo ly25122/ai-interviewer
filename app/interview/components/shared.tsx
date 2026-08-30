@@ -12,12 +12,12 @@ export const SOURCE_META: Record<
 > = {
   intel_hit: {
     label: '面经考点',
-    hint: '该岗位或该组面经中出现过，非通用题库抽取。',
+    hint: '该场面试的面经中出现过，非通用题库抽取。',
     tone: 'bg-[rgba(37,99,235,0.12)] text-[#2f6df0]',
   },
   resume_match: {
     label: '经历已覆盖',
-    hint: '职位要求与简历经历重合，将围绕实际贡献追问。',
+    hint: '选拔要求与简历经历重合，将围绕实际贡献追问。',
     tone: 'bg-[rgba(31,107,74,0.12)] text-[var(--ok)]',
   },
   resume_risk: {
@@ -27,7 +27,7 @@ export const SOURCE_META: Record<
   },
   jd_gap: {
     label: '要求未覆盖',
-    hint: '职位描述有明确要求，简历中缺少对应经历。',
+    hint: '选拔要求有明确条目，简历中缺少对应经历。',
     tone: 'bg-[rgba(159,45,58,0.1)] text-[var(--danger)]',
   },
 };
@@ -308,7 +308,7 @@ export function ResumeSheet({
             onClick={() => setOpenJd((v) => !v)}
             className="flex w-full items-center justify-between gap-2 text-left"
           >
-            <span className="text-xs font-medium">岗位 JD</span>
+            <span className="text-xs font-medium">选拔要求</span>
             <span className="text-xs text-[var(--muted)]">
               {openJd ? '收起' : `展开 · ${jd.trim().length} 字`}
             </span>

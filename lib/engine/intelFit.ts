@@ -44,6 +44,6 @@ export function checkIntelJobFit(input: {
   return {
     ok: false,
     scarce: true,
-    reason: `现在只有 ${input.items.length} 条情报，而且对不上「${company} · ${role}」。再检索几条，或贴这个岗位的面经，才能进画像。`,
+    reason: `现在只有 ${input.items.length} 条情报，而且对不上「${company} · ${role}」。再检索几条，或贴这场面试的面经，才能进画像。`,
   };
 }

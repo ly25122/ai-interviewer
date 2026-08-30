@@ -77,11 +77,11 @@ export default function HomePage() {
               再开始准备
             </h1>
             <p className="anim-rise-late mt-6 max-w-xl text-[15px] leading-relaxed text-white/68">
-              先把这家公司、这个岗位真实怎么考摸清楚，再对照你的简历练。不是随机刷题，是按情报出题、按缺口复盘。
+              实习、夏令营都可以。一场一场摸清怎么考，再对照简历练。不是随机刷题，是按情报出题、按缺口复盘。
             </p>
             <div className="anim-rise-late mt-9 grid gap-6 sm:grid-cols-3">
               {[
-                { n: '1', t: '看清怎么考', d: '把公开面经收成这份岗位的考点，而不是一份通用题库。' },
+                { n: '1', t: '看清怎么考', d: '把面经收成这场面试的考点，而不是一份通用题库。' },
                 { n: '2', t: '对着简历练', d: '按你写过的项目追问，讲不清的地方当场标出来。' },
                 { n: '3', t: '只补缺口', d: '练完告诉你站住了哪些、还差哪三刀，下一步不用猜。' },
               ].map((item) => (
@@ -102,7 +102,7 @@ export default function HomePage() {
               className="home-cta inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-medium"
             >
               <RocketIcon />
-              创建新的备战
+              准备下一场
             </Link>
             <Link
               href="/interview?demo=1"

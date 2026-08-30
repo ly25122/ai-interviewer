@@ -366,7 +366,7 @@ export function ReviewPanel({
                 onClick={onRestart}
                 className="btn-ghost rounded-md px-4 py-2 text-xs"
               >
-                换一个目标岗位
+                准备下一场
               </button>
             </div>
           </>

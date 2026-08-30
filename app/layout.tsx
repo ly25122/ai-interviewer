@@ -20,7 +20,7 @@ const serif = Noto_Serif_SC({
 export const metadata: Metadata = {
   title: '情报驱动 面试备战',
   description:
-    '先聚合这家公司、这个岗位怎么考，再结合简历和 JD 针对性模拟，最后告诉你哪里没准备好、下一步只练什么。',
+    '实习或夏令营都可以。先摸清下一场怎么考，再对照简历练，最后告诉你哪里没准备好、下一步只练什么。',
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {

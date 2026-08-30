@@ -123,16 +123,16 @@ export function ProfilePanel({
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="font-brand text-2xl leading-tight">岗位情报画像</h1>
+        <h1 className="font-brand text-2xl leading-tight">考情画像</h1>
         <p className="mt-1 text-xs text-[var(--muted)]">
           {company} · {role}
           {syllabus ? ` · 由 ${syllabus.postCount || intel.length} 条情报聚合` : ''}
-          {syllabus?.aiAugmented ? ' · 情报较少，已结合 JD 与简历补全考点' : ''}
+          {syllabus?.aiAugmented ? ' · 情报较少，已结合选拔要求与简历补全考点' : ''}
         </p>
       </div>
 
       <section className="surface rounded-xl p-5 sm:p-6">
-        <p className="text-[11px] tracking-[0.14em] text-[var(--muted)]">岗位 · 简历匹配</p>
+        <p className="text-[11px] tracking-[0.14em] text-[var(--muted)]">要求 · 简历匹配</p>
         <div className="mt-4 grid items-start gap-6 lg:grid-cols-[minmax(220px,300px)_1fr]">
           <div>
             <p
@@ -146,7 +146,7 @@ export function ProfilePanel({
             >
               {fit.score}
             </p>
-            <p className="mt-2 text-xs text-[var(--muted)]">百分制 · 对照 JD 与已聚合考点</p>
+            <p className="mt-2 text-xs text-[var(--muted)]">百分制 · 对照选拔要求与已聚合考点</p>
             <div className="mt-4 h-2 overflow-hidden rounded-full bg-black/8">
               <div
                 className={`h-full rounded-full ${
@@ -198,7 +198,7 @@ export function ProfilePanel({
         <div className="surface rounded-lg p-3 sm:p-4 lg:col-span-2">
           <p className="text-[11px] tracking-[0.14em] text-[var(--muted)]">高频考点</p>
           {syllabus?.aiAugmented && (
-            <p className="mt-1 text-[10px] text-[var(--muted)]">含模型根据 JD / 简历推断的考点，权重低于面经原文。</p>
+            <p className="mt-1 text-[10px] text-[var(--muted)]">含模型根据选拔要求与简历推断的考点，权重低于面经原文。</p>
           )}
           {topics.length > 0 ? (
             <div className="mt-3">

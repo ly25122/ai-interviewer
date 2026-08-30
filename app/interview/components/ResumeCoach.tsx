@@ -103,7 +103,7 @@ export function ResumeCoach({
       <div className="surface rounded-lg p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-sm font-medium">对照岗位改简历</h2>
+            <h2 className="text-sm font-medium">对照这场面试改简历</h2>
             <p className="mt-1 text-xs text-[var(--muted)]">
               点「应用到简历」会立刻写入本场材料，下一轮训练用新版本。可连续点多条。
             </p>
@@ -125,7 +125,7 @@ export function ResumeCoach({
               已把 {appliedCount} 条改动写入本场简历
             </p>
             <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-              不会下载文件。回到「目标岗位」能看到更新后的文本；再练一轮会按新简历出题。
+              不会下载文件。回到「这场面试」能看到更新后的文本；再练一轮会按新简历出题。
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
@@ -133,7 +133,7 @@ export function ResumeCoach({
                 onClick={onViewResume}
                 className="btn-primary rounded-md px-4 py-2 text-xs"
               >
-                去目标岗位查看简历
+                去这场面试查看简历
               </button>
               <button
                 type="button"

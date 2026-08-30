@@ -467,7 +467,7 @@ export async function collectInterviewIntel(target: CollectTarget): Promise<Coll
   if (!ranked.length) {
     warnings.push(
       hasTavily || hasBocha
-        ? '没有找到足够相关的公开面经，可换更具体的公司/岗位名。'
+        ? '没有找到足够相关的公开面经，可换更具体的去向或方向。'
         : '未配置 TAVILY_API_KEY / BOCHA_API_KEY，公开搜索结果不足。可先手动粘贴面经。',
     );
   }

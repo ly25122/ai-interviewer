@@ -22,10 +22,10 @@ export async function POST(request: Request) {
   const name = body.name?.trim() ?? '';
   const role = body.role?.trim() ?? '';
   if (name.length < 2) {
-    return NextResponse.json({ error: '请填写目标公司或学校' }, { status: 400 });
+    return NextResponse.json({ error: '请填写去向（公司、学校或夏令营）' }, { status: 400 });
   }
   if (role.length < 2) {
-    return NextResponse.json({ error: '请填写岗位或专业' }, { status: 400 });
+    return NextResponse.json({ error: '请填写方向（岗位、专业或营期方向）' }, { status: 400 });
   }
 
   try {

@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: '简历太短，请先放入完整简历再改' }, { status: 400 });
   }
   if (jd.length < 40) {
-    return NextResponse.json({ error: '请先放入岗位 JD，才能对照着改' }, { status: 400 });
+    return NextResponse.json({ error: '请先放入选拔要求，才能对照着改' }, { status: 400 });
   }
 
   try {

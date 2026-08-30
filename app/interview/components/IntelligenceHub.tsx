@@ -175,7 +175,7 @@ export function IntelligenceHub({
 
   async function collectAuto() {
     if (company.trim().length < 2 || role.trim().length < 2) {
-      setNote('先回上一页把公司和岗位填好');
+      setNote('先回上一页把去向和方向填好');
       return;
     }
     setBusy('collect');
@@ -265,7 +265,7 @@ export function IntelligenceHub({
             {company} · {role}
           </h1>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            面经会抽高频考点和原题，聚成下一页的岗位画像。条数太少、又对不上这个岗位时，不会硬画一张图。
+            面经会抽高频考点和原题，聚成下一页的考情画像。条数太少、又对不上这场面试时，不会硬画一张图。
           </p>
         </div>
         <span className="text-[11px] text-[var(--muted)]">已收集 {items.length} 条</span>
@@ -337,7 +337,7 @@ export function IntelligenceHub({
               <input
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                placeholder="来源备注，如「师兄去年面这个组」"
+                placeholder="来源备注，如「师兄去年面过这场」"
                 className="field rounded-md px-2.5 py-1.5 text-xs"
               />
               <select
@@ -359,7 +359,7 @@ export function IntelligenceHub({
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="粘贴/整理：这个组考过什么、面试官风格、几轮、重点方向…"
+                placeholder="粘贴/整理：这场考过什么、面试官风格、几轮、重点方向…"
                 className="field h-28 w-full resize-none rounded-md p-2.5 text-xs leading-relaxed"
               />
               <button type="button" onClick={addPaste} className="btn-primary rounded-md px-3 py-1.5 text-xs">
@@ -434,7 +434,7 @@ export function IntelligenceHub({
                 <input
                   value={collectDept}
                   onChange={(e) => setCollectDept(e.target.value)}
-                  placeholder="部门/组（可选），如「电商交易」"
+                  placeholder="细分（可选），如「电商交易」或「营期方向」"
                   className="field rounded-md px-2.5 py-1.5 text-xs"
                 />
                 <p className="self-center text-[11px] text-[var(--muted)]">
@@ -597,9 +597,9 @@ export function IntelligenceHub({
       <ErrorNote error={error} />
 
       <PhaseNav
-        nextLabel={summarizing ? '正在聚合考点…' : '查看岗位情报画像 →'}
+        nextLabel={summarizing ? '正在聚合考点…' : '查看考情画像 →'}
         onNext={onNext}
-        backLabel="返回目标岗位"
+        backLabel="返回这场面试"
         onBack={onBack}
         nextDisabled={items.length === 0 || summarizing}
       />

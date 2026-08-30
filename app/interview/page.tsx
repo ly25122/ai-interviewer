@@ -15,9 +15,9 @@ import { SetupPanel } from './components/SetupPanel';
 import { usePrepProject } from './usePrepProject';
 
 const JOURNEY = [
-  { id: 'setup', label: '目标岗位' },
+  { id: 'setup', label: '这场面试' },
   { id: 'intel', label: '面试情报' },
-  { id: 'profile', label: '岗位画像' },
+  { id: 'profile', label: '考情画像' },
   { id: 'practice', label: '针对训练' },
   { id: 'review', label: '复盘' },
 ];
@@ -57,7 +57,7 @@ function InterviewApp() {
             />
           </div>
           <p className="hidden shrink-0 text-[11px] text-[var(--muted)] sm:block">
-            {prep.company && prep.role ? `${prep.company} · ${prep.role}` : '先锁定目标岗位'}
+            {prep.company && prep.role ? `${prep.company} · ${prep.role}` : '先锁定这场面试'}
           </p>
           <Link
             href="/history"

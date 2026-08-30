@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: '简历太短，请粘贴完整简历文本' }, { status: 400 });
   }
   if (jd.length < 40) {
-    return NextResponse.json({ error: 'JD 太短，请粘贴完整岗位描述' }, { status: 400 });
+    return NextResponse.json({ error: '选拔要求太短，请粘贴 JD、招生简章或考核说明' }, { status: 400 });
   }
 
   try {

@@ -46,7 +46,7 @@ export function PracticeLauncher({
           {company} · {role}
         </h1>
         <p className="mt-1 text-xs text-[var(--muted)]">
-          先定时长、题量和难度，再选练法。提纲按你的简历、JD 和情报出。
+          先定时长、题量和难度，再选练法。提纲按你的简历、选拔要求和情报出。
         </p>
       </div>
 
@@ -132,7 +132,7 @@ export function PracticeLauncher({
           className="surface rounded-lg p-5 text-left transition hover:border-[var(--accent)]"
         >
           <p className="text-xs text-[var(--accent)]">情报针对训练</p>
-          <p className="mt-2 font-brand text-2xl">只练这个组爱考的</p>
+          <p className="mt-2 font-brand text-2xl">只练这场爱考的</p>
           <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
             {topics > 0
               ? `围绕已聚合的 ${topics} 个高频考点，出 ${questionCount} 题。`
@@ -147,7 +147,7 @@ export function PracticeLauncher({
       <ErrorNote error={error} />
 
       <button type="button" onClick={onBack} className="btn-ghost rounded-md px-4 py-2.5 text-sm">
-        返回岗位画像
+        返回考情画像
       </button>
     </div>
   );

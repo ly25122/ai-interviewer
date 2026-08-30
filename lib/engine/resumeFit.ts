@@ -57,9 +57,9 @@ export function scoreResumeFit(resume: string, jd: string, syllabus?: Syllabus):
   if (score >= 75) {
     verdict = '主线对得上。剩下的是边角，面试里被追到再说清边界就行。';
   } else if (score >= 50) {
-    verdict = '主线能对上一部分，有几处 JD 要、简历没写实，面试会被点名。';
+    verdict = '主线能对上一部分，有几处要求写了、简历没写实，面试会被点名。';
   } else {
-    verdict = '和这个岗位的重合偏少。先补材料或换目标，再进训练更有用。';
+    verdict = '和这场面试的重合偏少。先补材料或换目标，再进训练更有用。';
   }
 
   return { score, verdict, gaps: topGaps, hits: topHits };
