@@ -380,7 +380,7 @@ export async function referenceAnswer(input: ReferenceInput): Promise<ReferenceA
     ],
     temperature: 0.3,
     json: true,
-    maxTokens: 900,
+    maxTokens: 2500,
   });
 
   const parsed = parseJson<{

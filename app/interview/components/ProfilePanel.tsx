@@ -131,6 +131,69 @@ export function ProfilePanel({
         </p>
       </div>
 
+      <section className="surface rounded-xl p-5 sm:p-6">
+        <p className="text-[11px] tracking-[0.14em] text-[var(--muted)]">岗位 · 简历匹配</p>
+        <div className="mt-4 grid items-start gap-6 lg:grid-cols-[minmax(220px,300px)_1fr]">
+          <div>
+            <p
+              className={`font-brand text-6xl tabular-nums leading-none sm:text-7xl ${
+                fit.score >= 75
+                  ? 'text-[var(--ok)]'
+                  : fit.score >= 50
+                    ? 'text-[var(--ink)]'
+                    : 'text-[var(--warn)]'
+              }`}
+            >
+              {fit.score}
+            </p>
+            <p className="mt-2 text-xs text-[var(--muted)]">百分制 · 对照 JD 与已聚合考点</p>
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-black/8">
+              <div
+                className={`h-full rounded-full ${
+                  fit.score >= 75
+                    ? 'bg-[var(--ok)]'
+                    : fit.score >= 50
+                      ? 'bg-[var(--accent)]'
+                      : 'bg-[var(--warn)]'
+                }`}
+                style={{ width: `${Math.max(6, fit.score)}%` }}
+              />
+            </div>
+            <p className="mt-4 text-base leading-relaxed">{fit.verdict}</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--paper)] p-4">
+              <p className="text-[11px] text-[var(--ok)]">已对上 {fit.hits.length}</p>
+              {fit.hits.length > 0 ? (
+                <ul className="mt-3 space-y-2">
+                  {fit.hits.map((h) => (
+                    <li key={h} className="text-sm leading-relaxed">
+                      {h}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-3 text-sm text-[var(--muted)]">还没有对上的考点。</p>
+              )}
+            </div>
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--paper)] p-4">
+              <p className="text-[11px] text-[var(--warn)]">可能被追 {fit.gaps.length}</p>
+              {fit.gaps.length > 0 ? (
+                <ul className="mt-3 space-y-2">
+                  {fit.gaps.map((g) => (
+                    <li key={g} className="text-sm leading-relaxed">
+                      {g}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-3 text-sm text-[var(--muted)]">暂未标出明显漏洞。</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div className="grid gap-3 lg:grid-cols-3">
         <div className="surface rounded-lg p-3 sm:p-4 lg:col-span-2">
           <p className="text-[11px] tracking-[0.14em] text-[var(--muted)]">高频考点</p>
@@ -158,7 +221,7 @@ export function ProfilePanel({
           )}
         </div>
 
-        <div className="surface rounded-lg p-3 sm:p-4 lg:col-span-2">
+        <div className="surface rounded-lg p-3 sm:p-4 lg:col-span-3">
           <p className="text-[11px] tracking-[0.14em] text-[var(--muted)]">近期真实问题</p>
           {questions.length > 0 ? (
             <ul className="mt-2 space-y-1.5">
@@ -170,25 +233,6 @@ export function ProfilePanel({
             </ul>
           ) : (
             <p className="mt-6 text-xs text-[var(--muted)]">聚合后面经里的原题会出现在这里。</p>
-          )}
-        </div>
-
-        <div className="surface rounded-lg p-3 sm:p-4">
-          <p className="text-[11px] tracking-[0.14em] text-[var(--muted)]">岗位 · 简历匹配</p>
-          <p className="font-brand mt-2 text-4xl tabular-nums">{fit.score}</p>
-          <p className="mt-1 text-[11px] text-[var(--muted)]">百分制，对照 JD 和已聚合考点</p>
-          <p className="mt-3 text-sm leading-relaxed">{fit.verdict}</p>
-          {fit.gaps.length > 0 && (
-            <div className="mt-3">
-              <p className="text-[11px] text-[var(--warn)]">可能被追的漏洞</p>
-              <ul className="mt-1.5 space-y-1">
-                {fit.gaps.map((g) => (
-                  <li key={g} className="text-xs leading-relaxed text-[var(--muted)]">
-                    · {g}
-                  </li>
-                ))}
-              </ul>
-            </div>
           )}
         </div>
       </div>

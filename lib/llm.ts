@@ -80,7 +80,11 @@ export function parseJson<T>(raw: string): T {
     const start = cleaned.indexOf('{');
     const end = cleaned.lastIndexOf('}');
     if (start !== -1 && end > start) {
-      return JSON.parse(cleaned.slice(start, end + 1)) as T;
+      try {
+        return JSON.parse(cleaned.slice(start, end + 1)) as T;
+      } catch {
+        /* 常见于输出被 max_tokens 截断 */
+      }
     }
     throw new LLMError(`无法解析为 JSON: ${cleaned.slice(0, 200)}`);
   }
