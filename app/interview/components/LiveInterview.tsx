@@ -167,75 +167,85 @@ export function LivePhase({
   const left = plan.points.length - done;
 
   return (
-    <div className="space-y-6">
-      <div className="surface flex flex-wrap items-center justify-between gap-5 rounded-lg p-4">
-        <CoverageRing
-          value={done}
-          max={plan.points.length}
-          label="已走完"
-          caption={
-            left > 0
-              ? `还剩 ${left} 个追问点。范围有限，走完就是今天的全部。`
-              : '全部追问点都问过了。'
-          }
-          tone={done === plan.points.length ? 'ok' : 'accent'}
-        />
-        <div className="min-w-[200px] flex-1">
-          <Meter
-            label={`当前第 ${index + 1} 题 · 共 ${plan.points.length} 题`}
-            value={done}
-            max={plan.points.length}
-            hint={
-              verified > 0
-                ? `其中 ${verified} 个经得起追问`
-                : '每答完一题，这根条就会往前走一截。'
-            }
-          />
+    <div className="grid items-start gap-4 lg:grid-cols-[260px_1fr]">
+      <aside className="space-y-3 lg:sticky lg:top-4">
+        <div className="surface rounded-lg p-4">
+          <p className="text-xs tracking-[0.16em] text-[var(--muted)]">训练进度</p>
+          <div className="mt-3">
+            <CoverageRing
+              value={done}
+              max={plan.points.length}
+              label="已走完"
+              caption={
+                left > 0
+                  ? `还剩 ${left} 个追问点。`
+                  : '全部追问点都问过了。'
+              }
+              tone={done === plan.points.length ? 'ok' : 'accent'}
+            />
+          </div>
+          <div className="mt-4">
+            <Meter
+              label={`当前第 ${index + 1} 题 · 共 ${plan.points.length} 题`}
+              value={done}
+              max={plan.points.length}
+              hint={
+                verified > 0
+                  ? `其中 ${verified} 个经得起追问`
+                  : '每答完一题，这根条就会往前走一截。'
+              }
+            />
+          </div>
         </div>
-      </div>
 
-      <ResumeSheet resume={resume} jd={jd} />
-
-      <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
-      <aside className="space-y-2">
-        <p className="text-xs tracking-[0.16em] text-[var(--muted)]">追问点</p>
-        {plan.points.map((p, i) => {
-          const done = sessions[p.id];
-          return (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => onSelect(i)}
-              className={`block w-full rounded-md border px-3 py-2 text-left text-xs transition ${
-                i === index
-                  ? 'border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]'
-                  : 'border-[var(--line)] bg-white text-[var(--ink)] hover:border-black/25'
-              }`}
-            >
-              <span className="line-clamp-2">{p.title}</span>
-              {done && (
-                <span
-                  className={`mt-1 block ${
-                    i === index ? 'text-white/70' : done.outcome === 'verified' ? 'text-[var(--ok)]' : 'text-[var(--warn)]'
+        <div className="surface rounded-lg p-3">
+          <p className="px-1 text-xs tracking-[0.16em] text-[var(--muted)]">追问点</p>
+          <div className="mt-2 space-y-1.5">
+            {plan.points.map((p, i) => {
+              const doneSession = sessions[p.id];
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => onSelect(i)}
+                  className={`block w-full rounded-md border px-3 py-2 text-left text-xs transition ${
+                    i === index
+                      ? 'border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]'
+                      : 'border-[var(--line)] bg-white text-[var(--ink)] hover:border-black/25'
                   }`}
                 >
-                  {done.outcome === 'verified' ? '经得起追问' : '经不起追问'}
-                  {' · '}
-                  {scoreSession(done)} 分
-                </span>
-              )}
+                  <span className="line-clamp-2">{p.title}</span>
+                  {doneSession && (
+                    <span
+                      className={`mt-1 block ${
+                        i === index
+                          ? 'text-white/70'
+                          : doneSession.outcome === 'verified'
+                            ? 'text-[var(--ok)]'
+                            : 'text-[var(--warn)]'
+                      }`}
+                    >
+                      {doneSession.outcome === 'verified' ? '经得起追问' : '经不起追问'}
+                      {' · '}
+                      {scoreSession(doneSession)} 分
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {allDone && (
+            <button
+              type="button"
+              onClick={onDone}
+              className="btn-primary mt-3 w-full rounded-md px-3 py-2 text-xs"
+            >
+              查看总结
             </button>
-          );
-        })}
-        {allDone && (
-          <button
-            type="button"
-            onClick={onDone}
-            className="btn-primary mt-3 w-full rounded-md px-3 py-2 text-xs"
-          >
-            查看总结
-          </button>
-        )}
+          )}
+        </div>
+
+        <ResumeSheet resume={resume} jd={jd} />
       </aside>
 
       <section>
@@ -284,7 +294,6 @@ export function LivePhase({
           />
         )}
       </section>
-    </div>
     </div>
   );
 }
