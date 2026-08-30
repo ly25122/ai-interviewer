@@ -12,6 +12,7 @@ import {
   type LocalState,
 } from '@/lib/storage';
 import demoState from '@/lib/demo-state.json';
+import { CoverageRing, JourneyBar, Meter, StackedMeter } from '@/app/components/ProgressViz';
 import type {
   AnalyzeInput,
   ProbeSession,
@@ -57,6 +58,12 @@ const STEP_LABEL: Record<Step, string> = {
   rating: '自评',
   map: '追问验证',
 };
+
+const PREPARE_JOURNEY = [
+  { id: 'input', label: '建考纲' },
+  { id: 'rating', label: '自评定位' },
+  { id: 'map', label: '追问验证' },
+];
 
 export default function PreparePage() {
   const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
@@ -112,6 +119,10 @@ export default function PreparePage() {
       </header>
 
       <div className="mx-auto w-full max-w-5xl px-5 py-8">
+        <div className="surface mb-8 rounded-lg px-4 py-4 sm:px-8">
+          <JourneyBar steps={PREPARE_JOURNEY} current={step} />
+        </div>
+
         {step === 'input' && (
           <InputStep
             onDone={(syllabus) => {
@@ -291,15 +302,29 @@ function RatingStep({
         <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
           基于 {syllabus.postCount} 篇面经。不用写字，只标会、模糊、不会。范围有限，这件事本身就能让人踏实一些。
         </p>
-        <div className="mt-4 h-1 overflow-hidden rounded-full bg-black/5">
-          <div
-            className="h-full rounded-full bg-[var(--accent)] transition-all"
-            style={{ width: `${(rated / Math.max(syllabus.topics.length, 1)) * 100}%` }}
+      </div>
+
+      <div className="surface flex flex-wrap items-center gap-6 rounded-lg p-4">
+        <CoverageRing
+          value={rated}
+          max={syllabus.topics.length}
+          label="已自评"
+          caption={
+            rated === syllabus.topics.length
+              ? '每个考点都有位置了。不确定变成了一张图。'
+              : `还剩 ${syllabus.topics.length - rated} 个没标。标完就能看见自己站在哪。`
+          }
+          tone={rated === syllabus.topics.length ? 'ok' : 'accent'}
+        />
+        <div className="min-w-[200px] flex-1">
+          <Meter
+            label="自评进度"
+            value={rated}
+            max={syllabus.topics.length}
+            hint="三档快评，不写字。每点一下，条就往前走。"
+            tone={rated === syllabus.topics.length ? 'ok' : 'accent'}
           />
         </div>
-        <p className="mt-2 text-xs text-[var(--muted)]">
-          已评 {rated} / {syllabus.topics.length}
-        </p>
       </div>
 
       <ul className="space-y-2">
@@ -381,6 +406,49 @@ function MapStep({
         <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
           自评会不等于真的会。AI 面试官最多追问两轮，只看你能不能持续给出新的具体事实。
         </p>
+      </div>
+
+      <div className="surface flex flex-wrap items-center gap-6 rounded-lg p-5">
+        <CoverageRing
+          value={map.covered}
+          max={map.total}
+          label="已覆盖"
+          caption={`这个岗位共 ${map.total} 个考点。你已经标过或验证过 ${map.covered} 个——范围和位置都看得见。`}
+          tone={map.covered / Math.max(map.total, 1) >= 0.6 ? 'ok' : 'accent'}
+        />
+        <div className="min-w-[220px] flex-1 space-y-4">
+          <Meter
+            label="覆盖进度"
+            value={map.covered}
+            max={map.total}
+            hint="覆盖 = 自评会 + 实测确认。不是假装的满分条。"
+          />
+          <StackedMeter
+            label="准备度构成"
+            segments={[
+              {
+                value: map.cells.filter((c) => c.status === 'verified').length,
+                tone: 'ok',
+                title: '实测确认',
+              },
+              {
+                value: map.cells.filter((c) => c.status === 'claimed').length,
+                tone: 'accent',
+                title: '自评会',
+              },
+              {
+                value: map.cells.filter((c) => c.status === 'shaky').length,
+                tone: 'warn',
+                title: '不稳',
+              },
+              {
+                value: map.cells.filter((c) => c.status === 'gap' || c.status === 'unrated').length,
+                tone: 'muted',
+                title: '缺口',
+              },
+            ]}
+          />
+        </div>
       </div>
 
       {map.gapCount > 0 && (

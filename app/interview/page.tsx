@@ -3,6 +3,7 @@
 import { useMemo, useState, type ChangeEvent } from 'react';
 import Link from 'next/link';
 import sample from '@/lib/interview-sample.json';
+import { CoverageRing, JourneyBar, Meter, StackedMeter } from '@/app/components/ProgressViz';
 import type {
   AttackPoint,
   AttackSource,
@@ -12,6 +13,13 @@ import type {
 } from '@/lib/types';
 
 type Phase = 'input' | 'plan' | 'live' | 'done';
+
+const JOURNEY = [
+  { id: 'input', label: '上传材料' },
+  { id: 'plan', label: '攻击计划' },
+  { id: 'live', label: '深挖追问' },
+  { id: 'done', label: '复盘' },
+];
 
 const SOURCE_META: Record<AttackSource, { label: string; tone: string }> = {
   resume_match: {
@@ -139,6 +147,10 @@ export default function InterviewPage() {
       </header>
 
       <div className="mx-auto w-full max-w-5xl px-5 py-8">
+        <div className="surface mb-8 rounded-lg px-4 py-4 sm:px-6">
+          <JourneyBar steps={JOURNEY} current={phase} />
+        </div>
+
         {phase === 'input' && (
           <InputPhase
             resume={resume}
@@ -245,6 +257,23 @@ function InputPhase({
         >
           填入示例简历与 JD
         </button>
+      </div>
+
+      <div className="surface grid gap-5 rounded-lg p-4 sm:grid-cols-2">
+        <Meter
+          label="简历完整度"
+          value={Math.min(resume.trim().length, 80)}
+          max={80}
+          hint={resume.trim().length >= 80 ? '够用了，可以出题' : '再补一点项目或实习细节'}
+          tone={resume.trim().length >= 80 ? 'ok' : 'accent'}
+        />
+        <Meter
+          label="JD 完整度"
+          value={Math.min(jd.trim().length, 40)}
+          max={40}
+          hint={jd.trim().length >= 40 ? '岗位要求已经能对照' : '把职位要求也贴进来'}
+          tone={jd.trim().length >= 40 ? 'ok' : 'accent'}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -358,6 +387,15 @@ function PlanPhase({
         <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">{plan.opening}</p>
       </div>
 
+      <div className="surface rounded-lg p-4">
+        <Meter
+          label="今天要深挖的攻击点"
+          value={0}
+          max={plan.points.length}
+          hint={`一共 ${plan.points.length} 个点，范围是有限的。问完就停，不会无限加压。`}
+        />
+      </div>
+
       <ol className="space-y-3">
         {plan.points.map((point, i) => (
           <li key={point.id} className="surface rounded-lg p-4">
@@ -423,8 +461,38 @@ function LivePhase({
   onDone: () => void;
 }) {
   const allDone = plan.points.every((p) => sessions[p.id]);
+  const done = Object.keys(sessions).length;
+  const verified = Object.values(sessions).filter((s) => s.outcome === 'verified').length;
+  const left = plan.points.length - done;
 
   return (
+    <div className="space-y-6">
+      <div className="surface flex flex-wrap items-center justify-between gap-5 rounded-lg p-4">
+        <CoverageRing
+          value={done}
+          max={plan.points.length}
+          label="已走完"
+          caption={
+            left > 0
+              ? `还剩 ${left} 个攻击点。范围有限，走完就是今天的全部。`
+              : '全部攻击点都问过了。'
+          }
+          tone={done === plan.points.length ? 'ok' : 'accent'}
+        />
+        <div className="min-w-[200px] flex-1">
+          <Meter
+            label={`当前第 ${index + 1} 题 · 共 ${plan.points.length} 题`}
+            value={done}
+            max={plan.points.length}
+            hint={
+              verified > 0
+                ? `其中 ${verified} 个经得起追问`
+                : '每答完一题，这根条就会往前走一截。'
+            }
+          />
+        </div>
+      </div>
+
     <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
       <aside className="space-y-2">
         <p className="text-xs tracking-[0.16em] text-[var(--muted)]">攻击点</p>
@@ -494,6 +562,7 @@ function LivePhase({
           />
         )}
       </section>
+    </div>
     </div>
   );
 }
@@ -593,6 +662,18 @@ function PointProbe({
       </div>
       <h2 className="font-brand mt-2 text-2xl">{point.title}</h2>
       <p className="mt-2 text-xs leading-relaxed text-[var(--muted)]">{point.reason}</p>
+      <div className="mt-4">
+        <Meter
+          label="本题追问轮次"
+          value={turns.length}
+          max={2}
+          hint={
+            turns.length === 0
+              ? '最多两轮。撑住就过，说不出新事实就停。'
+              : `已完成 ${turns.length} 轮，还剩 ${Math.max(0, 2 - turns.length)} 轮。`
+          }
+        />
+      </div>
 
       {turns.map((turn, i) => (
         <div key={i} className="mt-4 space-y-1 border-l-2 border-[var(--accent)]/35 pl-3">
@@ -668,6 +749,27 @@ function DonePhase({
               ? `已验证的 ${summary.verified} 个点都撑住了追问。继续保持用事实说话。`
               : '还没有完成任何攻击点。'}
         </p>
+      </div>
+
+      <div className="surface flex flex-wrap items-center gap-6 rounded-lg p-5">
+        <CoverageRing
+          value={summary.done}
+          max={summary.total}
+          label="走完"
+          caption="不确定变成了具体数字：问了多少、撑住多少、崩在哪一轮。"
+          tone={summary.done === summary.total && summary.total > 0 ? 'ok' : 'accent'}
+        />
+        <div className="min-w-[220px] flex-1">
+          <StackedMeter
+            label="结果构成"
+            segments={[
+              { value: summary.verified, tone: 'ok', title: '经得起' },
+              { value: summary.collapsed, tone: 'warn', title: '经不起' },
+              { value: Math.max(0, summary.total - summary.done), tone: 'muted', title: '未问' },
+            ]}
+            hint="绿色不是分数，是「说出了新的具体事实」。"
+          />
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
