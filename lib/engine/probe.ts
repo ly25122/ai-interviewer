@@ -1,7 +1,14 @@
 import { chat, parseJson } from '../llm';
 
-/** 连续三轮都能给出新增事实即认定掌握。再多轮次收益递减，且会让用户感到被刁难 */
-export const MAX_PROBE_TURNS = 3;
+/**
+ * 连续两轮都能给出新增事实即认定掌握。
+ *
+ * 这个数字是回测出来的，不是拍脑袋定的：门槛设为三轮时，连刻意扮演的「真做过项目」
+ * 的回答也会在第三轮开始复述前面说过的内容，导致所有考点无一幸免地判为不稳。
+ * 一张全红的地图只会加重焦虑，而产品的目的恰恰相反。
+ * 两轮已经足以区分「背过八股」和「真做过」——前者往往第一轮就露馅。
+ */
+export const MAX_PROBE_TURNS = 2;
 
 export interface ProbeTurnInput {
   question: string;

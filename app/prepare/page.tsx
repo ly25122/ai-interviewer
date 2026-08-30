@@ -9,7 +9,9 @@ import {
   getSnapshot,
   setLocalState,
   subscribe,
+  type LocalState,
 } from '@/lib/storage';
+import demoState from '@/lib/demo-state.json';
 import type {
   AnalyzeInput,
   ProbeSession,
@@ -22,12 +24,23 @@ import type {
 
 type Step = 'input' | 'rating' | 'map';
 
+/**
+ * 一份预先跑好的完整状态，由 scripts/gen-demo-state.mjs 真实调用引擎生成。
+ * 演示时完整走一遍需要等模型十几秒、手点十几次自评、再做几轮追问，时长撑不住，
+ * 因此提供一个直接看结果的入口。数据本身没有一处是手写死的。
+ */
+const DEMO_STATE = demoState as unknown as LocalState;
+
 const STATUS_META: Record<TopicStatus, { label: string; cell: string; legend: string }> = {
-  verified: { label: '实测确认', cell: 'bg-emerald-500', legend: 'bg-emerald-500' },
-  claimed: { label: '自评会，未验证', cell: 'bg-emerald-200', legend: 'bg-emerald-200' },
-  shaky: { label: '不稳', cell: 'bg-amber-400', legend: 'bg-amber-400' },
-  gap: { label: '不会', cell: 'bg-rose-400', legend: 'bg-rose-400' },
-  unrated: { label: '未评估', cell: 'bg-slate-200', legend: 'bg-slate-200' },
+  verified: { label: '实测确认', cell: 'bg-emerald-600 text-white', legend: 'bg-emerald-600' },
+  claimed: {
+    label: '自评会，未验证',
+    cell: 'bg-emerald-100 text-emerald-800',
+    legend: 'bg-emerald-100',
+  },
+  shaky: { label: '不稳', cell: 'bg-amber-300 text-amber-900', legend: 'bg-amber-300' },
+  gap: { label: '不会', cell: 'bg-rose-500 text-white', legend: 'bg-rose-500' },
+  unrated: { label: '未评估', cell: 'bg-slate-100 text-slate-500', legend: 'bg-slate-100' },
 };
 
 const RATING_OPTIONS: Array<{ value: SelfRating; label: string; tone: string }> = [
@@ -84,6 +97,10 @@ export default function PreparePage() {
             setLocalState(() => ({ syllabus, ratings: {}, probes: {} }));
             setStep('rating');
           }}
+          onLoadDemo={() => {
+            setLocalState(() => DEMO_STATE);
+            setStep('map');
+          }}
         />
       )}
 
@@ -117,7 +134,13 @@ export default function PreparePage() {
   );
 }
 
-function InputStep({ onDone }: { onDone: (syllabus: Syllabus) => void }) {
+function InputStep({
+  onDone,
+  onLoadDemo,
+}: {
+  onDone: (syllabus: Syllabus) => void;
+  onLoadDemo: () => void;
+}) {
   const [posts, setPosts] = useState<string[]>(['', '']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -150,19 +173,28 @@ function InputStep({ onDone }: { onDone: (syllabus: Syllabus) => void }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="text-sm font-semibold">第一步：把面经变成考纲</h2>
         <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
           粘贴几篇同一岗位的面经。系统会先判断每篇能不能信，再把题目按考点归并，
           按可信度加权排序——一篇高可信真面经的分量，高于五篇广告帖。
         </p>
-        <button
-          type="button"
-          onClick={() => setPosts(SAMPLES.map((s) => `${s.title}\n\n${s.content}`))}
-          className="mt-3 rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-700 transition hover:border-slate-400"
-        >
-          用三篇示例快速体验
-        </button>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setPosts(SAMPLES.map((s) => `${s.title}\n\n${s.content}`))}
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-700 transition hover:border-slate-400"
+          >
+            用三篇示例快速体验
+          </button>
+          <button
+            type="button"
+            onClick={onLoadDemo}
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-500 transition hover:border-slate-400"
+          >
+            或直接查看一份已完成的地图
+          </button>
+        </div>
       </div>
 
       {posts.map((post, i) => (
@@ -230,7 +262,7 @@ function RatingStep({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="text-sm font-semibold">
           第二步：三分钟过一遍，这个岗位共 {syllabus.topics.length} 个考点
         </h2>
@@ -346,14 +378,14 @@ function MapStep({
         />
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <div className="mb-3 flex flex-wrap items-center gap-3">
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-sm font-semibold">
             {syllabus.company} · {syllabus.role} 准备度地图
           </h2>
           <div className="flex flex-wrap gap-2.5">
             {Object.entries(STATUS_META).map(([key, meta]) => (
-              <span key={key} className="flex items-center gap-1 text-[11px] text-slate-500">
+              <span key={key} className="flex items-center gap-1.5 text-[11px] text-slate-500">
                 <span className={`h-2.5 w-2.5 rounded-sm ${meta.legend}`} />
                 {meta.label}
               </span>
@@ -361,17 +393,21 @@ function MapStep({
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {byCategory.map(([category, cells]) => (
-            <div key={category} className="flex flex-wrap items-center gap-2">
-              <span className="w-20 shrink-0 text-xs text-slate-500">{category}</span>
+            <div key={category} className="flex gap-3">
+              <span className="w-16 shrink-0 pt-2 text-right text-xs text-slate-400">
+                {category}
+              </span>
               <div className="flex flex-wrap gap-1.5">
                 {cells.map((cell) => (
                   <span
                     key={cell.topicId}
                     title={`${cell.title} · ${STATUS_META[cell.status].label}`}
-                    className={`h-7 w-7 rounded-md ${STATUS_META[cell.status].cell}`}
-                  />
+                    className={`flex h-9 max-w-[170px] items-center rounded-md px-2.5 text-[11px] font-medium ${STATUS_META[cell.status].cell}`}
+                  >
+                    <span className="truncate">{cell.title}</span>
+                  </span>
                 ))}
               </div>
             </div>
@@ -380,7 +416,7 @@ function MapStep({
       </div>
 
       {claimed.length > 0 && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-sm font-semibold">验证一下你说会的考点</h2>
           <p className="mt-1 text-xs leading-relaxed text-slate-400">
             自评会不等于真的会。每个考点最多追问三轮，只看你能不能持续给出新的具体事实，
@@ -418,7 +454,7 @@ function MapStep({
       )}
 
       {map.nextThree.length > 0 && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-sm font-semibold">接下来只做这三件事</h2>
           <p className="mt-1 text-xs text-slate-400">
             按考点权重乘以你的缺口排序。不给完整清单，长清单只会加重压力。
@@ -602,13 +638,19 @@ function Stat({
 }) {
   return (
     <div
-      className={`rounded-xl border p-4 ${
+      className={`rounded-xl border p-5 shadow-sm ${
         emphasize ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white'
       }`}
     >
       <p className="text-xs text-slate-500">{label}</p>
-      <p className="mt-1 text-3xl font-semibold tabular-nums">{value}</p>
-      <p className="mt-1 text-xs text-slate-400">{hint}</p>
+      <p
+        className={`mt-1.5 text-4xl font-semibold tabular-nums ${
+          emphasize ? 'text-amber-700' : ''
+        }`}
+      >
+        {value}
+      </p>
+      <p className="mt-1.5 text-xs leading-relaxed text-slate-400">{hint}</p>
     </div>
   );
 }

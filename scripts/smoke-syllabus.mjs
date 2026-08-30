@@ -13,7 +13,13 @@ const res = await fetch(`${BASE}/api/syllabus`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    posts: samples.map(({ key, label, hint, ...post }) => post),
+    posts: samples.map((s) => ({
+      title: s.title,
+      content: s.content,
+      publishedAt: s.publishedAt,
+      author: s.author,
+      comments: s.comments,
+    })),
   }),
 });
 

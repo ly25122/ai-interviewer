@@ -39,11 +39,19 @@ const GAP_FACTOR: Record<TopicStatus, number> = {
   verified: 0,
 };
 
-function explain(topic: SyllabusTopic, status: TopicStatus): string {
+function explain(topic: SyllabusTopic, cell: ReadinessCell): string {
   const postCount = new Set(topic.sources.map((s) => s.postId)).size;
   const frequency = `在 ${postCount} 篇面经中出现`;
 
-  switch (status) {
+  // 落差是最值得说清楚的一种情况：崩在第一轮和崩在第二轮，对用户是完全不同的信息
+  if (cell.selfRating === 'confident' && cell.probe?.outcome === 'collapsed') {
+    const turn = cell.probe.collapsedAtTurn;
+    return turn === 1
+      ? `${frequency}，你自评会，但第一个追问就没能说出具体机制`
+      : `${frequency}，你自评会，追问到第 ${turn} 轮时答不出新东西了`;
+  }
+
+  switch (cell.status) {
     case 'gap':
       return `${frequency}，而你标记为不会`;
     case 'shaky':
@@ -89,7 +97,7 @@ export function buildReadinessMap(
     .map(({ cell }) => ({
       topicId: cell.topicId,
       title: cell.title,
-      reason: explain(topicById.get(cell.topicId)!, cell.status),
+      reason: explain(topicById.get(cell.topicId)!, cell),
     }));
 
   return {

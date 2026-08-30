@@ -1,0 +1,377 @@
+{
+  "syllabus": {
+    "company": "字节",
+    "role": "后端",
+    "topics": [
+      {
+        "id": "t7",
+        "title": "性能测试方法",
+        "category": "系统设计",
+        "weight": 1,
+        "variants": [
+          "这个 30% 是怎么测出来的？"
+        ],
+        "sources": [
+          {
+            "postId": "p2",
+            "verdict": "trustworthy",
+            "interviewDate": "2026-08-12",
+            "contribution": 1,
+            "originalText": "这个 30% 是怎么测出来的？"
+          }
+        ]
+      },
+      {
+        "id": "t8",
+        "title": "Redis 缓存击穿与应对",
+        "category": "缓存",
+        "weight": 1,
+        "variants": [
+          "Redis 缓存击穿是什么、怎么解决。"
+        ],
+        "sources": [
+          {
+            "postId": "p2",
+            "verdict": "trustworthy",
+            "interviewDate": "2026-08-12",
+            "contribution": 1,
+            "originalText": "Redis 缓存击穿是什么、怎么解决。"
+          }
+        ]
+      },
+      {
+        "id": "t9",
+        "title": "MySQL MVCC 与 ReadView",
+        "category": "数据库",
+        "weight": 1,
+        "variants": [
+          "MySQL 的 MVCC，追问了 ReadView 的生成时机，以及可重复读和读已提交在这里的区别。"
+        ],
+        "sources": [
+          {
+            "postId": "p2",
+            "verdict": "trustworthy",
+            "interviewDate": "2026-08-12",
+            "contribution": 1,
+            "originalText": "MySQL 的 MVCC，追问了 ReadView 的生成时机，以及可重复读和读已提交在这里的区别。"
+          }
+        ]
+      },
+      {
+        "id": "t10",
+        "title": "LRU 缓存实现",
+        "category": "算法",
+        "weight": 1,
+        "variants": [
+          "手撕 LRU 缓存"
+        ],
+        "sources": [
+          {
+            "postId": "p2",
+            "verdict": "trustworthy",
+            "interviewDate": "2026-08-12",
+            "contribution": 1,
+            "originalText": "手撕 LRU 缓存"
+          }
+        ]
+      },
+      {
+        "id": "t2",
+        "title": "MySQL 索引原理与失效场景",
+        "category": "数据库",
+        "weight": 0.275,
+        "variants": [
+          "MySQL 索引原理",
+          "MySQL 索引失效的场景"
+        ],
+        "sources": [
+          {
+            "postId": "p1",
+            "verdict": "promotional",
+            "interviewDate": "未知",
+            "contribution": 0.075,
+            "originalText": "MySQL 索引原理"
+          },
+          {
+            "postId": "p3",
+            "verdict": "suspicious",
+            "interviewDate": "2024年秋招",
+            "contribution": 0.2,
+            "originalText": "MySQL 索引失效的场景"
+          }
+        ]
+      },
+      {
+        "id": "t11",
+        "title": "HashMap 扩容机制",
+        "category": "语言基础",
+        "weight": 0.2,
+        "variants": [
+          "Java 集合框架，HashMap 的扩容机制"
+        ],
+        "sources": [
+          {
+            "postId": "p3",
+            "verdict": "suspicious",
+            "interviewDate": "2024年秋招",
+            "contribution": 0.2,
+            "originalText": "Java 集合框架，HashMap 的扩容机制"
+          }
+        ]
+      },
+      {
+        "id": "t12",
+        "title": "JVM 垃圾回收算法与收集器",
+        "category": "语言基础",
+        "weight": 0.2,
+        "variants": [
+          "JVM 垃圾回收算法，CMS 和 G1 的区别"
+        ],
+        "sources": [
+          {
+            "postId": "p3",
+            "verdict": "suspicious",
+            "interviewDate": "2024年秋招",
+            "contribution": 0.2,
+            "originalText": "JVM 垃圾回收算法，CMS 和 G1 的区别"
+          }
+        ]
+      },
+      {
+        "id": "t13",
+        "title": "Spring IOC 与 AOP 原理",
+        "category": "框架",
+        "weight": 0.2,
+        "variants": [
+          "Spring IOC 和 AOP 的实现原理"
+        ],
+        "sources": [
+          {
+            "postId": "p3",
+            "verdict": "suspicious",
+            "interviewDate": "2024年秋招",
+            "contribution": 0.2,
+            "originalText": "Spring IOC 和 AOP 的实现原理"
+          }
+        ]
+      },
+      {
+        "id": "t14",
+        "title": "数据库三大范式",
+        "category": "数据库",
+        "weight": 0.2,
+        "variants": [
+          "数据库三大范式"
+        ],
+        "sources": [
+          {
+            "postId": "p3",
+            "verdict": "suspicious",
+            "interviewDate": "2024年秋招",
+            "contribution": 0.2,
+            "originalText": "数据库三大范式"
+          }
+        ]
+      },
+      {
+        "id": "t15",
+        "title": "线上问题排查",
+        "category": "项目经历",
+        "weight": 0.2,
+        "variants": [
+          "实习期间怎么排查线上问题"
+        ],
+        "sources": [
+          {
+            "postId": "p3",
+            "verdict": "suspicious",
+            "interviewDate": "2024年秋招",
+            "contribution": 0.2,
+            "originalText": "实习期间怎么排查线上问题"
+          }
+        ]
+      },
+      {
+        "id": "t16",
+        "title": "Redis 缓存穿透与应对",
+        "category": "缓存",
+        "weight": 0.2,
+        "variants": [
+          "Redis 缓存穿透怎么处理"
+        ],
+        "sources": [
+          {
+            "postId": "p3",
+            "verdict": "suspicious",
+            "interviewDate": "2024年秋招",
+            "contribution": 0.2,
+            "originalText": "Redis 缓存穿透怎么处理"
+          }
+        ]
+      },
+      {
+        "id": "t1",
+        "title": "自我介绍与项目经历",
+        "category": "项目经历",
+        "weight": 0.075,
+        "variants": [
+          "自我介绍和项目经历"
+        ],
+        "sources": [
+          {
+            "postId": "p1",
+            "verdict": "promotional",
+            "interviewDate": "未知",
+            "contribution": 0.075,
+            "originalText": "自我介绍和项目经历"
+          }
+        ]
+      },
+      {
+        "id": "t3",
+        "title": "Redis 数据结构",
+        "category": "缓存",
+        "weight": 0.075,
+        "variants": [
+          "Redis 常见数据结构"
+        ],
+        "sources": [
+          {
+            "postId": "p1",
+            "verdict": "promotional",
+            "interviewDate": "未知",
+            "contribution": 0.075,
+            "originalText": "Redis 常见数据结构"
+          }
+        ]
+      },
+      {
+        "id": "t4",
+        "title": "TCP 连接管理",
+        "category": "网络",
+        "weight": 0.075,
+        "variants": [
+          "TCP 三次握手四次挥手"
+        ],
+        "sources": [
+          {
+            "postId": "p1",
+            "verdict": "promotional",
+            "interviewDate": "未知",
+            "contribution": 0.075,
+            "originalText": "TCP 三次握手四次挥手"
+          }
+        ]
+      },
+      {
+        "id": "t5",
+        "title": "进程与线程的区别",
+        "category": "操作系统",
+        "weight": 0.075,
+        "variants": [
+          "进程和线程的区别"
+        ],
+        "sources": [
+          {
+            "postId": "p1",
+            "verdict": "promotional",
+            "interviewDate": "未知",
+            "contribution": 0.075,
+            "originalText": "进程和线程的区别"
+          }
+        ]
+      },
+      {
+        "id": "t6",
+        "title": "链表反转",
+        "category": "算法",
+        "weight": 0.075,
+        "variants": [
+          "手撕算法：反转链表"
+        ],
+        "sources": [
+          {
+            "postId": "p1",
+            "verdict": "promotional",
+            "interviewDate": "未知",
+            "contribution": 0.075,
+            "originalText": "手撕算法：反转链表"
+          }
+        ]
+      }
+    ],
+    "postCount": 3,
+    "generatedAt": "2026-08-30T02:18:44.218Z"
+  },
+  "ratings": {
+    "t7": "confident",
+    "t8": "confident",
+    "t9": "confident",
+    "t10": "unsure",
+    "t2": "confident",
+    "t11": "confident",
+    "t12": "unknown",
+    "t13": "confident",
+    "t14": "unsure",
+    "t15": "confident",
+    "t16": "confident",
+    "t1": "confident",
+    "t3": "confident",
+    "t4": "unsure",
+    "t5": "confident",
+    "t6": "confident"
+  },
+  "probes": {
+    "t7": {
+      "topicId": "t7",
+      "turns": [
+        {
+          "question": "请描述一下你最近一次性能测试的完整过程，包括测试目标、场景设计、指标采集和结果分析。",
+          "answer": "哦…就是先定目标，大概是看响应时间和吞吐量。然后设计场景，用JMeter压一下，指标的话就是看TPS和错误率。分析就是对比基线，差不多这样。",
+          "hasNewFact": false,
+          "judgement": "回答全是套话，没有具体机制、步骤或数据，且使用'大概''差不多'等模糊词。"
+        }
+      ],
+      "outcome": "collapsed",
+      "collapsedAtTurn": 1
+    },
+    "t8": {
+      "topicId": "t8",
+      "turns": [
+        {
+          "question": "请先解释一下什么是缓存击穿，它和缓存穿透、缓存雪崩有什么区别？",
+          "answer": "缓存击穿：热点key过期瞬间，大量请求直击DB。穿透查不存在key，雪崩是大量key同时失效。击穿靠互斥锁或逻辑过期，穿透靠布隆过滤器，雪崩靠随机过期+多级缓存。",
+          "hasNewFact": true,
+          "judgement": "候选人准确区分了击穿、穿透、雪崩，并给出了各自的应对方案，包含具体机制（互斥锁、逻辑过期、布隆过滤器、随机过期、多级缓存）。"
+        },
+        {
+          "question": "你提到互斥锁和逻辑过期，能具体说说逻辑过期是怎么实现的吗？它和互斥锁相比有什么优缺点？",
+          "answer": "逻辑过期：value里存过期时间戳，线程发现超时先返回旧值，后台异步重建缓存。比如热点key设逻辑过期10s，实际物理永不过期。\n\n优点：读多写少时扛高并发，不阻塞请求。缺点：数据短暂不一致，且需额外维护重建队列。\n\n失效场景：重建速度跟不上请求量，或缓存被物理删除。当时我选互斥锁，因为活动数据一致性要求高，牺牲点吞吐换准确。",
+          "hasNewFact": true,
+          "judgement": "候选人具体说明了逻辑过期的实现（value存时间戳、异步重建）、优缺点（不阻塞但短暂不一致）及失效场景，并给出了实际选择依据。"
+        }
+      ],
+      "outcome": "verified",
+      "collapsedAtTurn": null
+    },
+    "t9": {
+      "topicId": "t9",
+      "turns": [
+        {
+          "question": "请先解释一下 MySQL 的 MVCC 机制，然后重点说说 ReadView 是在什么时候生成的？可重复读和读已提交在 ReadView 的生成上有什么区别？",
+          "answer": "MVCC 就是多版本并发控制，靠 undo log 和隐藏列实现。ReadView 应该在事务第一次执行快照读时生成，可重复读是第一次生成后一直用，读已提交是每次快照读都生成新的。具体机制我记不太清了。",
+          "hasNewFact": true,
+          "judgement": "候选人明确指出了ReadView的生成时机（第一次快照读）以及两种隔离级别下的区别（复用与每次生成），属于具体机制描述。"
+        },
+        {
+          "question": "你提到ReadView在可重复读下复用，那ReadView具体包含哪些字段？这些字段如何判断一个版本对当前事务可见？",
+          "answer": "ReadView 大概有 creator_trx_id、m_ids、min_trx_id、max_trx_id 这几个字段吧。判断可见性就是拿事务 id 跟这些字段比一比，小于 min 的可见，大于 max 的不可见，中间的再查 m_ids……具体细节我记不清了。",
+          "hasNewFact": false,
+          "judgement": "候选人虽然列出了字段名，但判断逻辑描述模糊，且明确表示记不清细节，无具体机制。"
+        }
+      ],
+      "outcome": "collapsed",
+      "collapsedAtTurn": 2
+    }
+  }
+}

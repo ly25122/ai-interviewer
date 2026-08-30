@@ -37,7 +37,15 @@ console.log(`回测 ${samples.length} 条样本，并发 ${CONCURRENCY}\n`);
 const started = Date.now();
 
 const results = await mapLimit(samples, CONCURRENCY, async (sample) => {
-  const { id, label, note, ...payload } = sample;
+  const { id, label } = sample;
+  // 显式构造，避免把标注信息泄漏给模型造成回测失真
+  const payload = {
+    title: sample.title,
+    content: sample.content,
+    publishedAt: sample.publishedAt,
+    author: sample.author,
+    comments: sample.comments,
+  };
   try {
     const res = await fetch(`${BASE}/api/analyze`, {
       method: 'POST',
